@@ -1,0 +1,17 @@
+# Entorno virtual
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Variables de entorno (Sensible)
+.env
+
+# Archivos de sistema
+Thumbs.db
+desktop.ini
+
+data/*.db
+data/chroma_db/

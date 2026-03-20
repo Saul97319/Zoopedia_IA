@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoopedia IA - Chat Visitante</title>
+    <!-- Tailwind CSS para diseño rápido y moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                    },
+                    colors: {
+                        zoo: {
+                            light: '#e8f5e9',
+                            DEFAULT: '#4caf50',
+                            dark: '#2e7d32',
+                            accent: '#ff9800'
+                        }
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.3s ease-out forwards',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+         /* --- ESTILOS DINÁMICOS PARA MODO OSCURO --- */
+        html.dark body { background-color: #0f172a !important; color: #f8fafc !important; }
+        
+        html.dark aside, 
+        html.dark header, 
+        html.dark .bg-white { 
+            background-color: #1e293b !important; 
+            border-color: #334155 !important; 
+            color: #f8fafc !important; 
+        }
+        
+        html.dark .text-slate-800, 
+        html.dark .text-slate-700, 
+        html.dark .text-slate-600 { color: #f8fafc !important; }
+        
+        html.dark .text-slate-500, 
+        html.dark .text-slate-400 { color: #cbd5e1 !important; }
+        
+        html.dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; }
+        html.dark .bg-slate-100, 
+        html.dark .bg-slate-200 { background-color: #334155 !important; border-color: #475569 !important; color: #f8fafc !important; }
+        
+        html.dark #chat-input { color: #f8fafc !important; }
+        html.dark #chat-input::placeholder { color: #94a3b8 !important; }
+        /* Apagar el gradiente blanco inferior en modo oscuro */
+        html.dark #zona-input { background-image: linear-gradient(to top, #0f172a 60%, transparent) !important; }
+        /* Estilos personalizados para scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Animación de "escribiendo..." */
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Transición suave para el sidebar */
+        #sidebar { transition: transform 0.3s ease-in-out, width 0.3s ease-in-out; }
+        .sidebar-collapsed { transform: translateX(-100%); width: 0 !important; border: none !important;}
+        
+        /* Ocultar elementos en móvil cuando el sidebar está cerrado */
+        @media (min-width: 768px) {
+            .sidebar-collapsed { transform: translateX(0); width: 0 !important; overflow: hidden;}
+        }
+
+       
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden selection:bg-zoo-light selection:text-zoo-dark">
+
+    <!-- (1 al 4) PANEL LATERAL (SIDEBAR) -->
+    <aside id="sidebar" class="w-80 bg-white border-r border-slate-200 flex flex-col h-full absolute z-20 md:relative shadow-xl md:shadow-none flex-shrink-0">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-zoo-dark flex items-center gap-2">
+                <i class="fa-solid fa-leaf"></i> Zoopedia
+            </h2>
+            <!-- Botón para cerrar en móviles -->
+            <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-zoo-dark">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-4">
+            <!-- (3) Botón Nueva Conversación -->
+            <button onclick="nuevoChat()" class="w-full bg-zoo text-white rounded-xl py-3 px-4 font-semibold shadow-md hover:bg-zoo-dark transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-plus"></i> Nueva conversación
+            </button>
+            
+            <!-- (2) Barra de Búsqueda -->
+            <div class="mt-4 relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
+                <input type="text" placeholder="Buscar chats..." class="w-full bg-slate-100 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zoo focus:bg-white transition-all">
+            </div>
+        </div>
+
+        <!-- (4) Historial de Conversaciones -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            <div>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Hoy</h3>
+                <div class="space-y-1">
+                    <button class="w-full text-left px-3 py-2 rounded-lg bg-zoo-light text-zoo-dark font-semibold text-sm flex items-center gap-3">
+                        <i class="fa-regular fa-message"></i> ¿Qué comen los leones?
+                    </button>
+                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3">
+                        <i class="fa-regular fa-message"></i> Horarios del reptilario
+                    </button>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ayer</h3>
+                <div class="space-y-1">
+                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3">
+                        <i class="fa-regular fa-message"></i> Información jirafas
+                    </button>
+                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3">
+                        <i class="fa-regular fa-message"></i> Precio teleférico
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <main class="flex-1 flex flex-col h-full relative w-full">
+        <!-- CABECERA -->
+        <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 shadow-sm z-10">
+            <div class="flex items-center gap-3">
+                <!-- (1) Botón menú lateral -->
+                <button onclick="toggleSidebar()" class="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <h1 class="font-bold text-lg text-slate-700 hidden sm:block">Asistente Virtual</h1>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-4 relative">
+                <!-- (13) Botón Chats / Cuidadores -->
+                <button onclick="abrirChatCuidador()" class="w-10 h-10 rounded-full hover:bg-blue-50 text-blue-500 flex items-center justify-center transition-colors relative" title="Mensajes Cuidadores">
+                    <i class="fa-solid fa-comments text-xl"></i>
+                    <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
+
+                <!-- (12) Botón de Emergencia para animales -->
+                <button onclick="abrirModalEmergencia()" class="animate-pulse-fast bg-red-100 text-red-600 hover:bg-red-200 hover:scale-105 transition-all px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-bold flex items-center gap-2 shadow-sm border border-red-200">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span class="hidden sm:inline">Alerta</span>
+                </button>
+
+                <!-- (5 y 6) Menú de Perfil -->
+                <div class="relative ml-2">
+                    <!-- Botón Perfil: Con animación de rotación, duración suave e iluminado (glow) al hacer hover -->
+                    <button id="profile-btn" onclick="toggleProfileMenu()" class="w-10 h-10 rounded-full bg-zoo-light text-zoo-dark border-2 border-zoo font-bold flex items-center justify-center hover:shadow-[0_0_15px_rgba(76,175,80,0.6)] transition-all duration-500 transform">
+                        DS
+                    </button>
+                    <!-- Menú Desplegable (6): Transición de opacidad y escala -->
+                    <div id="profile-menu" class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 transform origin-top-right transition-all duration-300 opacity-0 scale-95 pointer-events-none">
+                        <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                            <p class="text-sm font-bold text-slate-800">Diego Silva</p>
+                            <p id="profile-email" class="text-xs text-slate-500">Cargando...</p>
+                        </div>
+                        <div class="py-1">
+                            <button onclick="abrirModalPerfil()" class="w-full text-left block px-4 py-2 text-sm text-slate-700 hover:bg-zoo-light hover:text-zoo-dark"><i class="fa-regular fa-id-card w-5 text-center mr-2"></i> Información personal</button>
+                            <button onclick="abrirModalTema()" class="w-full text-left block px-4 py-2 text-sm text-slate-700 hover:bg-zoo-light hover:text-zoo-dark"><i class="fa-solid fa-palette w-5 text-center mr-2"></i> Tema y Personalización</button>
+                            <button onclick="abrirModalConfig()" class="w-full text-left block px-4 py-2 text-sm text-slate-700 hover:bg-zoo-light hover:text-zoo-dark"><i class="fa-solid fa-gear w-5 text-center mr-2"></i> Configuración</button>
+                            <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-zoo-light hover:text-zoo-dark"><i class="fa-regular fa-circle-question w-5 text-center mr-2"></i> Ayuda</a>
+                        </div>
+                        <div class="border-t border-slate-100 py-1">
+                            <button onclick="cerrarSesion()" class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold transition-colors"><i class="fa-solid fa-arrow-right-from-bracket w-5 text-center mr-2"></i> Cerrar sesión</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ÁREA DE MENSAJES DEL CHAT -->
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 sm:p-6 pb-32">
+            
+            <!-- Mensaje de bienvenida IA (11) -->
+            <div class="flex items-end gap-3 mb-6 animate-fade-in-up">
+                <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md">
+                    <i class="fa-solid fa-hippo"></i>
+                </div>
+                <div class="bg-white border border-slate-200 p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%] sm:max-w-md text-slate-700 leading-relaxed relative">
+                    ¡Hola, Diego! 👋 Soy la Zoopedia IA. <br><br>
+                    ¡Perfecto! La inteligencia artificial tiene este espacio libre para brindar la respuesta. Puedes preguntarme cualquier cosa referente a las 15 especies de animales en el zoológico. En caso de no tener información, solo responderé: <i>"No tengo información sobre eso, ¡Pregúntame algo más!"</i>
+                    <span class="text-[10px] text-slate-400 absolute bottom-1 right-3">12:00</span>
+                </div>
+            </div>
+
+            <!-- (10) Ejemplo de Mensaje del Usuario -->
+            <div class="flex items-end gap-3 mb-6 justify-end animate-fade-in-up" style="animation-delay: 0.1s;">
+                <div class="burbuja-usuario bg-zoo-dark text-white p-4 rounded-2xl rounded-br-none shadow-md max-w-[85%] sm:max-w-md leading-relaxed relative transition-colors duration-300">
+                    ¿Cuál es el animal más rápido del zoológico y en qué zona está?
+                    <span class="text-[10px] text-white absolute bottom-1 right-3 opacity-80">12:02</span>
+                </div>
+                <div class="avatar-usuario overflow-hidden w-10 h-10 rounded-full bg-slate-200 text-slate-600 border border-slate-300 flex items-center justify-center flex-shrink-0 font-bold text-sm shadow-sm">
+                    DS
+                </div>
+            </div>
+
+            <!-- Divisor de fecha -->
+            <div class="flex justify-center my-6">
+                <span class="bg-slate-200 text-slate-500 text-xs font-bold px-3 py-1 rounded-full">Hoy</span>
+            </div>
+
+        </div>
+
+        <!-- (7) ZONA DE INPUT DE CHAT -->
+        <div id="zona-input" class="absolute bottom-0 w-full bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-6 pb-4 px-4 sm:px-8"></div>
+            <div class="w-full max-w-4xl mx-auto relative bg-white rounded-3xl shadow-lg border border-slate-200 flex items-end p-2 transition-shadow focus-within:shadow-xl focus-within:border-zoo-light"></div>
+                
+                <!-- (8) Botón Adjuntar -->
+                <button class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-zoo hover:bg-zoo-light rounded-full transition-colors flex-shrink-0" title="Adjuntar imagen">
+                    <i class="fa-solid fa-paperclip text-xl"></i>
+                </button>
+
+                <!-- Input Texto -->
+            <div id="zona-input" class="absolute bottom-0 w-full bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-6 pb-4 px-4 sm:px-8">
+                <div class="w-full max-w-4xl mx-auto relative bg-white rounded-3xl shadow-lg border border-slate-200 flex items-end p-2 transition-shadow focus-within:shadow-xl focus-within:border-zoo-light">
+                
+                    <button class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-zoo hover:bg-zoo-light rounded-full transition-colors flex-shrink-0" title="Adjuntar imagen">
+                        <i class="fa-solid fa-paperclip text-xl"></i>
+                    </button>
+
+                    <textarea id="chat-input" rows="1" class="flex-1 max-h-32 min-h-[48px] bg-transparent resize-none outline-none px-2 py-3 text-slate-700 placeholder-slate-400 font-medium" placeholder="Pregunta a la Zoopedia..." oninput="autoResize(this)" onkeypress="handleEnter(event)"></textarea>
+
+                    <div class="flex items-center gap-1 flex-shrink-0 pb-1 pr-1">
+                        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Mensaje de voz">
+                            <i class="fa-solid fa-microphone text-xl"></i>
+                        </button>
+                        <button onclick="enviarMensaje()" id="send-btn" class="w-10 h-10 flex items-center justify-center bg-zoo text-white rounded-full hover:bg-zoo-dark hover:scale-105 transition-all shadow-md disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-center text-xs text-slate-400 mt-2">La IA puede cometer errores. Verifica la información importante.</p>
+            </div>
+    </main>
+
+    <!-- (12) MODAL DE ALERTA DE EMERGENCIA (PÁNICO) -->
+    <div id="modal-emergencia" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform scale-95 opacity-0 transition-all duration-300" id="modal-emergencia-content">
+            <!-- Header Rojo -->
+            <div class="bg-red-600 p-6 text-center text-white relative">
+                <button onclick="cerrarModalEmergencia()" class="absolute top-4 right-4 text-red-200 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+                <i class="fa-solid fa-triangle-exclamation text-5xl mb-3"></i>
+                <h2 class="text-2xl font-black uppercase tracking-wide">Alerta de Emergencia</h2>
+                <p class="text-red-100 text-sm mt-1">Uso exclusivo para peligro de animales o visitantes</p>
+            </div>
+            
+            <div class="p-6">
+                <p class="text-slate-600 text-sm text-center font-medium mb-6">
+                    🚨 <strong class="text-red-600">Advertencia:</strong> El uso falso o abusivo de esta función resultará en la suspensión de tu cuenta.
+                </p>
+
+                <div>
+        <label class="block text-sm font-bold text-slate-700 mb-1">Especie o Zona (Opcional)</label>
+        <select id="alerta-zona" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500">
+            <option value="General">Seleccionar animal...</option>
+            <option value="Leones">Leones</option>
+            <option value="Jirafas">Jirafas</option>
+            <option value="Zona Norte">Zona Norte</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-sm font-bold text-slate-700 mb-1">Descripción breve</label>
+        <textarea id="alerta-descripcion" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 resize-none h-20" placeholder="Ej. Hay un visitante en el área restringida..."></textarea>
+    </div>
+                <!-- Botón con SEGURO DE 8 SEGUNDOS -->
+                <div class="mt-8">
+                    <button id="btn-enviar-alerta" disabled class="w-full py-4 rounded-xl font-black uppercase tracking-wider text-white bg-slate-400 cursor-not-allowed transition-all relative overflow-hidden flex flex-col items-center justify-center h-14">
+                        <span id="texto-alerta" class="z-10 flex items-center gap-2">
+                            <i class="fa-solid fa-lock text-sm"></i> Seguro activo: Espere <span id="contador-alerta">8</span>s
+                        </span>
+                        <!-- Barra de progreso fondo -->
+                        <div id="barra-progreso-alerta" class="absolute left-0 top-0 bottom-0 bg-slate-500 w-0 transition-all duration-1000 ease-linear"></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-perfil" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative">
+            <button onclick="cerrarModalPerfil()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-regular fa-id-card text-zoo"></i> Mi Perfil</h2>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Nombre Completo</label>
+                    <div class="relative flex items-center">
+                        <input type="text" id="perfil-nombre" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium outline-none pr-10 transition-all" readonly>
+                        <button onclick="habilitarEdicion('perfil-nombre')" class="absolute right-3 text-blue-500 hover:text-blue-700 transition-colors" title="Editar Nombre"><i class="fa-solid fa-pen"></i></button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase">Correo Electrónico <span class="text-[10px] text-red-400 ml-1">(No editable)</span></label>
+                    <input type="email" id="perfil-email" class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-500 font-medium outline-none cursor-not-allowed" readonly>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Teléfono</label>
+                    <div class="relative flex items-center">
+                        <input type="text" id="perfil-telefono" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium outline-none pr-10 transition-all" readonly>
+                        <button onclick="habilitarEdicion('perfil-telefono')" class="absolute right-3 text-blue-500 hover:text-blue-700 transition-colors" title="Editar Teléfono"><i class="fa-solid fa-pen"></i></button>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="w-1/2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Nacimiento</label>
+                        <div class="relative flex items-center">
+                            <input type="text" id="perfil-fecha" placeholder="YYYY-MM-DD" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium outline-none pr-8 transition-all" readonly>
+                            <button onclick="habilitarEdicion('perfil-fecha')" class="absolute right-3 text-blue-500 hover:text-blue-700 transition-colors" title="Editar Nacimiento"><i class="fa-solid fa-pen"></i></button>
+                        </div>
+                    </div>
+                    <div class="w-1/2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Género</label>
+                        <div class="relative flex items-center">
+                            <input type="text" id="perfil-genero" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium outline-none pr-8 transition-all" readonly>
+                            <button onclick="habilitarEdicion('perfil-genero')" class="absolute right-3 text-blue-500 hover:text-blue-700 transition-colors" title="Editar Género"><i class="fa-solid fa-pen"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase">Contraseña</label>
+                    <div class="flex gap-2">
+                        <input type="password" value="********" class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-500 font-medium tracking-widest outline-none cursor-not-allowed" readonly>
+                        <button onclick="abrirModalPassword()" class="bg-zoo hover:bg-zoo-dark text-white px-4 rounded-lg font-bold transition-colors text-sm whitespace-nowrap shadow-sm">
+                            Cambiar
+                        </button>
+                    </div>
+                </div>
+
+                <button id="btn-guardar-perfil" onclick="guardarPerfil()" class="hidden w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-bold transition-colors shadow-md mt-4 justify-center items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-toast" class="fixed bottom-10 -left-[600px] bg-white px-6 py-4 rounded-2xl font-bold z-[100] flex items-center gap-3 transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] shadow-xl border-2">
+        <div id="toast-icon" class="text-white rounded-full w-8 h-8 flex items-center justify-center font-black"></div>
+        <span id="toast-message" class="text-slate-700"></span>
+    </div>
+
+    <div id="modal-password" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative">
+            <button onclick="cerrarModalPassword()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-solid fa-lock text-zoo"></i> Cambiar Contraseña</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Contraseña Antigua</label>
+                    <input type="password" id="pass-antigua" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-zoo outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Nueva Contraseña</label>
+                    <input type="password" id="pass-nueva" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-zoo outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Confirmar Nueva Contraseña</label>
+                    <input type="password" id="pass-confirmar" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-zoo outline-none transition-all">
+                </div>
+                
+                <button onclick="cambiarPassword()" class="w-full bg-zoo hover:bg-zoo-dark text-white py-3 rounded-xl font-bold transition-colors shadow-md mt-2 flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-tema" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative flex flex-col max-h-[90vh]">
+            <button onclick="cerrarModalTema()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors z-10">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-palette text-zoo"></i> Apariencia</h2>
+
+            <div class="flex border-b border-slate-200 mb-4">
+                <button onclick="switchTabTema('tema')" id="tab-btn-tema" class="flex-1 py-2 font-bold border-b-2 border-zoo text-zoo transition-colors">Tema</button>
+                <button onclick="switchTabTema('personalizacion')" id="tab-btn-perso" class="flex-1 py-2 font-bold text-slate-400 hover:text-zoo border-b-2 border-transparent transition-colors">Personalización</button>
+            </div>
+
+            <div id="tab-content-tema" class="space-y-4">
+                <p class="text-sm text-slate-500 mb-4">Elige cómo quieres que se vea la interfaz de la Zoopedia.</p>
+                <div class="grid grid-cols-3 gap-3">
+                    <button id="btn-tema-claro" onclick="setModoTema('claro')" class="flex flex-col items-center justify-center p-4 border-2 border-zoo bg-zoo-light rounded-xl text-zoo-dark hover:shadow-md transition-all">
+                        <i class="fa-regular fa-sun text-3xl mb-2"></i>
+                        <span class="font-bold text-sm mt-1">Claro</span>
+                    </button>
+                    <button id="btn-tema-oscuro" onclick="setModoTema('oscuro')" class="flex flex-col items-center justify-center p-4 border-2 border-slate-200 text-slate-500 hover:border-slate-800 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all">
+                        <i class="fa-regular fa-moon text-3xl mb-2"></i>
+                        <span class="font-bold text-sm mt-1">Oscuro</span>
+                    </button>
+                    <button id="btn-tema-sistema" onclick="setModoTema('sistema')" class="flex flex-col items-center justify-center p-4 border-2 border-slate-200 text-slate-500 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
+                        <i class="fa-solid fa-desktop text-3xl mb-2"></i>
+                        <span class="font-bold text-sm mt-1">Sistema</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="tab-content-perso" class="hidden space-y-6 overflow-y-auto pr-2 pb-4">
+                
+                <div>
+                    <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-solid fa-circle-user mr-1 text-zoo"></i> Foto de Perfil</h3>
+                    <div class="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                        <input type="file" id="input-foto-local" accept="image/*" class="hidden">
+                        <button onclick="triggerSubirFoto()" class="w-14 h-14 flex-shrink-0 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:text-zoo hover:border-zoo hover:bg-zoo-light transition-colors" title="Subir desde PC">
+                            <i class="fa-solid fa-upload text-lg"></i>
+                        </button>
+                        
+                        <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998671.png')" class="w-14 h-14 flex-shrink-0 rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998671.png" class="w-full h-full object-cover"></button>
+                        <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998766.png')" class="w-14 h-14 flex-shrink-0 rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998766.png" class="w-full h-full object-cover"></button>
+                        <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998592.png')" class="w-14 h-14 flex-shrink-0 rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998592.png" class="w-full h-full object-cover"></button>
+                        <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998713.png')" class="w-14 h-14 flex-shrink-0 rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998713.png" class="w-full h-full object-cover"></button>
+
+                        <button onclick="abrirGaleriaAvatares()" class="w-14 h-14 flex-shrink-0 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-zoo transition-colors shadow-inner" title="Ver más animales">
+                            <i class="fa-solid fa-plus text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="modal-galeria-avatares" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative flex flex-col max-h-[80vh]">
+            <button onclick="cerrarGaleriaAvatares()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors z-10">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2"><i class="fa-solid fa-paw text-zoo"></i> Galería de Animales</h2>
+            
+            <div class="grid grid-cols-5 gap-3 overflow-y-auto pr-2 pb-1 scrollbar-thin">
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998671.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998671.png" class="w-full h-full object-cover"></button>
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998766.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998766.png" class="w-full h-full object-cover"></button>
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998592.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998592.png" class="w-full h-full object-cover"></button>
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998713.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998713.png" class="w-full h-full object-cover"></button>
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998751.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998751.png" class="w-full h-full object-cover"></button>
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998610.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998610.png" class="w-full h-full object-cover"></button>
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998781.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998781.png" class="w-full h-full object-cover"></button>
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998622.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998622.png" class="w-full h-full object-cover"></button>
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998698.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998698.png" class="w-full h-full object-cover"></button>
+                <button onclick="cambiarFotoPerfil('https://cdn-icons-png.flaticon.com/512/1998/1998632.png')" class="w-full aspect-square rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm"><img src="https://cdn-icons-png.flaticon.com/512/1998/1998632.png" class="w-full h-full object-cover"></button>
+            </div>
+        </div>
+    </div>
+
+                <div>
+                    <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-regular fa-image mr-1 text-zoo"></i> Fondo del Chat</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button onclick="cambiarFondoChat('default')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-500 hover:border-zoo transition-colors">Blanco</button>
+                        <button onclick="cambiarFondoChat('black')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-900 flex items-center justify-center text-xs font-bold text-white hover:border-zoo transition-colors">Negro</button>
+                        <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg');"></button>
+                        <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg');"></button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-solid fa-comment-dots mr-1 text-zoo"></i> Estilo de Burbuja</h3>
+                    <div class="flex flex-wrap gap-3">
+                        </div>
+                </div>
+
+            </div>
+        </div>
+    </div> <div id="modal-configuracion" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative flex flex-col max-h-[90vh] overflow-y-auto scrollbar-thin">
+                <button onclick="cerrarModalConfig()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors z-10">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+                <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-2"><i class="fa-solid fa-gear text-zoo"></i> Configuración</h2>
+
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-solid fa-shield-halved mr-1 text-zoo"></i> Seguridad y acceso</h3>
+                        <p class="text-xs text-slate-500 mb-3">Opciones de inicio de sesión en este dispositivo:</p>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 opacity-70 cursor-not-allowed">
+                                <div class="flex items-center gap-3"><i class="fa-solid fa-asterisk text-slate-400"></i><span class="text-sm font-bold text-slate-600">Contraseña</span></div>
+                                <span class="text-[10px] bg-slate-200 text-slate-500 px-2 py-1 rounded-full font-bold">Activo</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 opacity-70 cursor-not-allowed">
+                                <div class="flex items-center gap-3"><i class="fa-solid fa-grip text-slate-400"></i><span class="text-sm font-bold text-slate-600">PIN</span></div>
+                                <span class="text-[10px] bg-slate-200 text-slate-500 px-2 py-1 rounded-full font-bold">Configurar</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 opacity-70 cursor-not-allowed">
+                                <div class="flex items-center gap-3"><i class="fa-solid fa-face-smile text-slate-400"></i><span class="text-sm font-bold text-slate-600">Reconocimiento de rostro</span></div>
+                                <span class="text-[10px] bg-slate-200 text-slate-500 px-2 py-1 rounded-full font-bold">Configurar</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-solid fa-credit-card mr-1 text-zoo"></i> Pagos y suscripciones</h3>
+                        <div class="p-4 border-2 border-zoo bg-zoo-light rounded-xl flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-bold text-zoo-dark">Versión Estándar</p>
+                                <p class="text-xs text-zoo">Plan actual activo</p>
+                            </div>
+                            <i class="fa-solid fa-check-circle text-2xl text-zoo"></i>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-200 pt-4">
+                        <h3 class="text-sm font-bold text-red-600 uppercase mb-3"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Zona de Peligro</h3>
+                        
+                        <button id="btn-mostrar-eliminar" onclick="mostrarFormularioEliminar()" class="w-full bg-white text-red-600 border-2 border-red-600 font-bold py-2 rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-trash"></i> Eliminar cuenta
+                        </button>
+
+                        <div id="form-eliminar-cuenta" class="hidden mt-4 space-y-3 bg-red-50 p-4 rounded-xl border border-red-200">
+                            <p class="text-xs text-red-700 font-bold mb-2">Esta acción requiere aprobación del administrador. Por favor, dinos el motivo y confirma tu contraseña.</p>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-red-700 uppercase mb-1">Motivo</label>
+                                <textarea id="motivo-eliminar" class="w-full border border-red-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 outline-none text-sm resize-none h-16 bg-white placeholder-red-300 text-slate-700" placeholder="¿Por qué deseas irte?"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-red-700 uppercase mb-1">Contraseña</label>
+                                <input type="password" id="pass-eliminar" class="w-full border border-red-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 outline-none text-sm bg-white text-slate-700" placeholder="Tu contraseña actual">
+                            </div>
+                            <button onclick="solicitarEliminacion()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-xl transition-colors shadow-sm mt-2 flex justify-center items-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> Solicitar eliminación
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+    </div>
+    <!-- JAVASCRIPT: Lógica de Interfaz Interactiva (Mock del Backend) -->
+    <script>
+        // --- 1. Configuración Global y Conexión ---
+        const API_URL = "http://127.0.0.1:8000"; // Asegúrate de que esta línea esté aquí
+        const chatContainer = document.getElementById('chat-container');
+        const inputField = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        // Recuperar sesión del usuario
+        const token = localStorage.getItem('access_token');
+        const usuarioStr = localStorage.getItem('usuario');
+        let modoEmergencia = false;
+        let intervaloVisitante = null;
+        
+        if (!token || !usuarioStr) {
+            alert("Sesión expirada. Por favor, inicia sesión de nuevo.");
+            window.location.href = "index.html";
+        }
+        
+        const usuarioActual = JSON.parse(usuarioStr);
+        let currentChatId = null;
+
+        // --- 2. Control de Interfaz (Sidebar y Perfil) ---
+        const sidebar = document.getElementById('sidebar');
+        function toggleSidebar() {
+            sidebar.classList.toggle('sidebar-collapsed');
+        }
+
+        const profileMenu = document.getElementById('profile-menu');
+        const profileBtn = document.getElementById('profile-btn');
+        let isProfileMenuOpen = false;
+        
+        async function abrirChatCuidador() {
+            try {
+                // 1. Buscamos todas las conversaciones del visitante
+                const res = await fetch(`${API_URL}/chat/conversaciones/${usuarioActual.id}`);
+                const data = await res.json();
+                
+                // 2. Filtramos la última que sea URGENTE y que NO esté resuelta
+                const alertaActiva = data.conversaciones.find(chat => 
+                    chat[1].startsWith("🚨 URGENTE") && !chat[1].startsWith("[RESUELTO]")
+                );
+
+                if (alertaActiva) {
+                    currentChatId = alertaActiva[0];
+                    modoEmergencia = true; // ACTIVAMOS MODO DIRECTO
+                    
+                    chatContainer.innerHTML = `
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-xl">
+                            <p class="text-red-700 font-bold"><i class="fa-solid fa-headset mr-2"></i> Estás en la línea directa con el Cuidador.</p>
+                            <p class="text-xs text-red-500 mt-1">El asistente IA está desactivado temporalmente.</p>
+                        </div>
+                    `;
+                    
+                    // Iniciar Polling para recibir respuestas
+                    if(intervaloVisitante) clearInterval(intervaloVisitante);
+                    intervaloVisitante = setInterval(cargarMensajesEnVivoVisitante, 3000);
+                    cargarMensajesEnVivoVisitante(); // Carga inicial
+                    
+                    if(window.innerWidth < 768) toggleSidebar();
+                } else {
+                    alert("No tienes ninguna alerta de emergencia activa en este momento.");
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function cargarMensajesEnVivoVisitante() {
+            if(!modoEmergencia || !currentChatId) return;
+            try {
+                const response = await fetch(`${API_URL}/chat/conversacion/${currentChatId}`);
+                const data = await response.json();
+                if (response.ok && data.mensajes) {
+                    const numActuales = chatContainer.querySelectorAll('.flex.items-end').length;
+                    if (data.mensajes.length > numActuales) {
+                        // Limpiamos y redibujamos
+                        chatContainer.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-xl"><p class="text-red-700 font-bold"><i class="fa-solid fa-headset mr-2"></i> Conectado con el Cuidador.</p></div>`;
+                        
+                        data.mensajes.forEach(msg => {
+                            if (msg.role === 'Usuario') {
+                                agregarMensajeUsuario(msg.content);
+                            } else {
+                                // Dibujar mensaje del cuidador
+                                const time = getCurrentTime();
+                                chatContainer.insertAdjacentHTML('beforeend', `
+                                    <div class="flex items-end gap-3 mb-6 animate-fade-in-up">
+                                        <div class="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0 shadow-md"><i class="fa-solid fa-user-shield"></i></div>
+                                        <div class="bg-white border border-red-200 p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%] sm:max-w-md text-slate-700">
+                                            <span class="text-xs font-bold text-red-600 block mb-1">Personal Zoopedia</span>
+                                            ${msg.content}
+                                            <span class="text-[10px] text-slate-400 absolute bottom-1 right-3">${time}</span>
+                                        </div>
+                                    </div>
+                                `);
+                            }
+                        });
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                }
+            } catch(e) {}
+        }
+
+        function toggleProfileMenu() {
+            isProfileMenuOpen = !isProfileMenuOpen;
+            if (isProfileMenuOpen) {
+                profileBtn.classList.add('rotate-[360deg]');
+                profileMenu.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+                profileMenu.classList.add('opacity-100', 'scale-100', 'pointer-events-auto');
+            } else {
+                profileBtn.classList.remove('rotate-[360deg]');
+                profileMenu.classList.remove('opacity-100', 'scale-100', 'pointer-events-auto');
+                profileMenu.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+            }
+        }
+
+        // --- 3. Lógica del Chat con Backend ---
+        function getCurrentTime() {
+            const now = new Date();
+            return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        function agregarMensajeUsuario(texto) {
+            const time = getCurrentTime();
+            
+            // Lógica para el avatar: Si hay foto, la mostramos, sino, usamos las iniciales
+            const avatarHtml = currentAvatar 
+                ? `<img src="${currentAvatar}" class="w-full h-full object-cover rounded-full" alt="Perfil">`
+                : usuarioActual.nombre.substring(0,2).toUpperCase();
+
+            const msgHTML = `
+                <div class="flex items-end gap-3 mb-6 justify-end animate-fade-in-up">
+                    <div class="${currentBubbleColor} burbuja-usuario text-white p-4 rounded-2xl rounded-br-none shadow-md max-w-[85%] sm:max-w-md leading-relaxed relative transition-colors duration-300">
+                        ${texto.replace(/\n/g, '<br>')}
+                        <span class="text-[10px] text-white absolute bottom-1 right-3 opacity-80">${time}</span>
+                    </div>
+                    <div class="avatar-usuario w-10 h-10 rounded-full bg-slate-200 text-slate-600 border border-slate-300 flex items-center justify-center flex-shrink-0 font-bold text-sm shadow-sm overflow-hidden">
+                        ${avatarHtml}
+                    </div>
+                </div>
+            `;
+            chatContainer.insertAdjacentHTML('beforeend', msgHTML);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function agregarIndicadorEscribiendo() {
+            const id = 'typing-' + Date.now();
+            const msgHTML = `
+                <div id="${id}" class="flex items-end gap-3 mb-6 animate-fade-in-up">
+                    <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md">
+                        <i class="fa-solid fa-hippo"></i>
+                    </div>
+                    <div class="bg-white border border-slate-200 py-4 px-5 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-1">
+                        <div class="w-2 h-2 bg-zoo-dark rounded-full typing-dot"></div>
+                        <div class="w-2 h-2 bg-zoo-dark rounded-full typing-dot"></div>
+                        <div class="w-2 h-2 bg-zoo-dark rounded-full typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.insertAdjacentHTML('beforeend', msgHTML);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return id;
+        }
+
+        function agregarMensajeIA(texto, typingId = null) {
+            if (typingId) document.getElementById(typingId).remove();
+            const time = getCurrentTime();
+            const msgHTML = `
+                <div class="flex items-end gap-3 mb-6 animate-fade-in-up">
+                    <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md">
+                        <i class="fa-solid fa-hippo"></i>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%] sm:max-w-md text-slate-700 leading-relaxed relative">
+                        ${texto}
+                        <span class="text-[10px] text-slate-400 absolute bottom-1 right-3">${time}</span>
+                    </div>
+                </div>
+            `;
+            chatContainer.insertAdjacentHTML('beforeend', msgHTML);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function nuevoChat() {
+            currentChatId = null; 
+            
+            // Apagamos el modo emergencia y detenemos la recarga automática
+            modoEmergencia = false; 
+            if(typeof intervaloVisitante !== 'undefined' && intervaloVisitante) {
+                clearInterval(intervaloVisitante);
+            }
+
+            chatContainer.innerHTML = '';
+            agregarMensajeIA(`¡Hola, ${usuarioActual.nombre}! ¿En qué puedo ayudarte hoy?`);
+        }
+
+        async function enviarMensaje() {
+            const texto = inputField.value.trim();
+            if(!texto) return;
+
+            // 1. Si no hay un chat activo, lo creamos
+            if (!currentChatId) {
+                try {
+                    const res = await fetch(`${API_URL}/chat/nueva`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: usuarioActual.id, titulo: "Nueva consulta" })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        currentChatId = data.conversacion_id;
+                    } else return;
+                } catch (e) {
+                    console.error("Fallo de conexión al crear chat", e);
+                    return;
+                }
+            }
+
+            // 2. Limpiar input visualmente
+            inputField.value = '';
+            inputField.style.height = 'auto';
+            
+            // 3. Mostrar mensaje del usuario y la animación de puntitos
+            agregarMensajeUsuario(texto);
+            const typingId = agregarIndicadorEscribiendo();
+
+            // 4. EL SEMÁFORO: ¿A quién le enviamos el mensaje?
+            try {
+                // Si estamos en la línea directa con el cuidador...
+                if (modoEmergencia) { 
+                    await fetch(`${API_URL}/chat/mensaje_directo`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mensaje: texto, conversacion_id: currentChatId })
+                    });
+                    // Como no responde la IA, borramos los puntitos de "escribiendo..." de inmediato
+                    document.getElementById(typingId).remove(); 
+                } 
+                // Si es un chat normal...
+                else { 
+                    const response = await fetch(`${API_URL}/chat/mensaje`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            pregunta: texto,
+                            user_id: usuarioActual.id,
+                            conversacion_id: currentChatId
+                        })
+                    });
+                    const data = await response.json();
+                    agregarMensajeIA(data.respuesta, typingId);
+                }
+            } catch (error) {
+                agregarMensajeIA("Error de conexión con el servidor.", typingId);
+            }
+        }
+
+        // --- 4. Inicialización ---
+        window.onload = async () => {
+            nuevoChat();
+            document.querySelector('#profile-menu p.font-bold').textContent = usuarioActual.nombre;
+            document.getElementById('profile-email').textContent = usuarioActual.correo || usuarioActual.email || 'Correo no disponible';
+            document.getElementById('profile-btn').textContent = usuarioActual.nombre.substring(0, 2).toUpperCase();
+            
+            // Cargar preferencias del usuario desde la base de datos
+            try {
+                const response = await fetch(`${API_URL}/usuario/perfil/${usuarioActual.id}`);
+                const data = await response.json();
+                
+                if(response.ok && data.perfil) {
+                    // Restauramos las configuraciones (el 'false' es para que no dispare la notificación verde al entrar a la página)
+                    if(data.perfil.tema) setModoTema(data.perfil.tema, false);
+                    if(data.perfil.fondo) cambiarFondoChat(data.perfil.fondo, false);
+                    if(data.perfil.burbuja) cambiarColorBurbuja(data.perfil.burbuja, false);
+                    if(data.perfil.avatar) cambiarFotoPerfil(data.perfil.avatar, false);
+                } else {
+                    setModoTema('claro', false); // Por defecto
+                }
+            } catch (error) {
+                console.error("Error al cargar perfil:", error);
+                setModoTema('claro', false);
+            }
+        };
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight < 128 ? textarea.scrollHeight : 128) + 'px';
+        }
+
+        function handleEnter(e) {
+            if(e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                enviarMensaje();
+            }
+        }
+
+        // --- 5. LÓGICA DEL BOTÓN DE EMERGENCIA ---
+        const modalEmergencia = document.getElementById('modal-emergencia');
+        const modalContent = document.getElementById('modal-emergencia-content');
+        const btnEnviarAlerta = document.getElementById('btn-enviar-alerta');
+        const textoAlerta = document.getElementById('texto-alerta');
+        const barraProgreso = document.getElementById('barra-progreso-alerta');
+        let timerEmergencia = null;
+
+        function abrirModalEmergencia() {
+            modalEmergencia.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            iniciarSeguroEmergencia();
+        }
+
+        function cerrarModalEmergencia() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modalEmergencia.classList.add('hidden');
+                resetSeguroEmergencia();
+            }, 300);
+        }
+
+        function iniciarSeguroEmergencia() {
+            let contador = 8;
+            btnEnviarAlerta.disabled = true;
+            btnEnviarAlerta.classList.remove('bg-red-600', 'hover:bg-red-700', 'hover:shadow-lg', 'cursor-pointer');
+            btnEnviarAlerta.classList.add('bg-slate-400', 'cursor-not-allowed');
+            
+            barraProgreso.style.transitionDuration = '0s';
+            barraProgreso.style.width = '0%';
+            setTimeout(() => {
+                barraProgreso.style.transitionDuration = '8s';
+                barraProgreso.style.width = '100%';
+            }, 50);
+
+            textoAlerta.innerHTML = `<i class="fa-solid fa-lock text-sm"></i> Seguro activo: Espere <span id="contador-alerta">8</span>s`;
+            const cntSpan = document.getElementById('contador-alerta');
+
+            timerEmergencia = setInterval(() => {
+                contador--;
+                if(contador > 0) {
+                    if(cntSpan) cntSpan.innerText = contador;
+                } else {
+                    clearInterval(timerEmergencia);
+                    desbloquearBotonEmergencia();
+                }
+            }, 1000);
+        }
+
+        function desbloquearBotonEmergencia() {
+            btnEnviarAlerta.disabled = false;
+            btnEnviarAlerta.classList.remove('bg-slate-400', 'cursor-not-allowed');
+            btnEnviarAlerta.classList.add('bg-red-600', 'hover:bg-red-700', 'hover:shadow-lg', 'hover:scale-105', 'cursor-pointer', 'animate-pulse');
+            barraProgreso.style.width = '0%'; 
+            textoAlerta.innerHTML = `<i class="fa-solid fa-paper-plane text-xl mr-2"></i> ACEPTAR Y ENVIAR ALERTA`;
+            
+            // CONEXIÓN AL BACKEND
+            btnEnviarAlerta.onclick = async () => {
+                const zona = document.getElementById('alerta-zona').value;
+                const descripcion = document.getElementById('alerta-descripcion').value.trim();
+
+                if (!descripcion) {
+                    alert("Por favor, escribe una breve descripción de la emergencia para que el cuidador sepa qué ocurre.");
+                    return;
+                }
+
+                textoAlerta.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xl mr-2"></i> ENVIANDO...`;
+                btnEnviarAlerta.classList.remove('hover:scale-105', 'animate-pulse');
+
+                try {
+                    const response = await fetch(`${API_URL}/chat/alerta`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: usuarioActual.id,
+                            zona: zona,
+                            descripcion: descripcion
+                        })
+                    });
+
+                    if (response.ok) {
+                        textoAlerta.innerHTML = `<i class="fa-solid fa-circle-check text-xl mr-2"></i> ALERTA ENVIADA AL CUIDADOR`;
+                        btnEnviarAlerta.classList.remove('bg-red-600', 'hover:bg-red-700');
+                        btnEnviarAlerta.classList.add('bg-green-600');
+                        
+                        document.getElementById('alerta-zona').selectedIndex = 0;
+                        document.getElementById('alerta-descripcion').value = '';
+
+                        setTimeout(cerrarModalEmergencia, 2000);
+                    } else {
+                        textoAlerta.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-xl mr-2"></i> ERROR AL ENVIAR`;
+                        setTimeout(desbloquearBotonEmergencia, 2000); 
+                    }
+                } catch (error) {
+                    console.error(error);
+                    alert("Verifica tu conexión a internet.");
+                    textoAlerta.innerHTML = `<i class="fa-solid fa-paper-plane text-xl mr-2"></i> REINTENTAR`;
+                }
+            };
+        }
+
+        function resetSeguroEmergencia() {
+            if(timerEmergencia) clearInterval(timerEmergencia);
+            if(barraProgreso) {
+                barraProgreso.style.transitionDuration = '0s';
+                barraProgreso.style.width = '0%';
+            }
+        }
+
+        // --- 6. LÓGICA DEL PERFIL Y CONTRASEÑA ---
+        const modalPerfil = document.getElementById('modal-perfil');
+        const modalPassword = document.getElementById('modal-password');
+
+        async function abrirModalPerfil() {
+            // Cerramos el menú desplegable de la esquina
+            if(isProfileMenuOpen) toggleProfileMenu();
+            modalPerfil.classList.remove('hidden');
+
+            try {
+                // Pedimos al backend la info completa con nuestro ID
+                const response = await fetch(`${API_URL}/usuario/perfil/${usuarioActual.id}`);
+                const data = await response.json();
+
+                if(response.ok && data.perfil) {
+                    document.getElementById('perfil-nombre').value = data.perfil.nombre || '';
+                    document.getElementById('perfil-email').value = data.perfil.email || '';
+                    document.getElementById('perfil-telefono').value = data.perfil.telefono || 'No registrado';
+                    document.getElementById('perfil-fecha').value = data.perfil.fecha_nac || 'No registrada';
+                    document.getElementById('perfil-genero').value = data.perfil.genero || 'No especificado';
+                }
+            } catch (error) {
+                console.error("Error al obtener perfil:", error);
+            }
+        }
+
+        function habilitarEdicion(idInput) {
+            const input = document.getElementById(idInput);
+            // Quitar el modo lectura y cambiar el diseño para que parezca editable
+            input.removeAttribute('readonly');
+            input.classList.remove('bg-slate-50', 'border-slate-200');
+            input.classList.add('bg-white', 'border-blue-400', 'ring-2', 'ring-blue-100');
+            input.focus();
+            
+            // Mostrar el botón de guardar cambios
+            const btnGuardar = document.getElementById('btn-guardar-perfil');
+            btnGuardar.classList.remove('hidden');
+            btnGuardar.classList.add('flex');
+        }
+
+        async function guardarPerfil() {
+            const nombre = document.getElementById('perfil-nombre').value;
+            const email = document.getElementById('perfil-email').value; // Usamos el mismo
+            const telefono = document.getElementById('perfil-telefono').value;
+            const fecha = document.getElementById('perfil-fecha').value;
+            const genero = document.getElementById('perfil-genero').value;
+
+            try {
+                const response = await fetch(`${API_URL}/usuario/actualizar`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: usuarioActual.id,
+                        nombre: nombre,
+                        email: email,
+                        telefono: telefono,
+                        fecha_nac: fecha,
+                        genero: genero
+                    })
+                });
+
+                if (response.ok) {
+                    mostrarToastPersonalizado("¡Información actualizada con éxito!", "exito");
+                    
+                    // Volver a bloquear los inputs visualmente
+                    ['perfil-nombre', 'perfil-telefono', 'perfil-fecha', 'perfil-genero'].forEach(id => {
+                        const input = document.getElementById(id);
+                        input.setAttribute('readonly', true);
+                        input.classList.add('bg-slate-50', 'border-slate-200');
+                        input.classList.remove('bg-white', 'border-blue-400', 'ring-2', 'ring-blue-100');
+                    });
+
+                    // Ocultar el botón de guardar nuevamente
+                    const btnGuardar = document.getElementById('btn-guardar-perfil');
+                    btnGuardar.classList.add('hidden');
+                    btnGuardar.classList.remove('flex');
+                    
+                    // Actualizar nombre en la interfaz gráfica principal
+                    document.querySelector('#profile-menu p.font-bold').textContent = nombre;
+                    document.getElementById('profile-btn').textContent = nombre.substring(0, 2).toUpperCase();
+                    
+                    // Actualizar la sesión local
+                    usuarioActual.nombre = nombre;
+                    localStorage.setItem('usuario', JSON.stringify(usuarioActual));
+
+                } else {
+                    mostrarToastPersonalizado("Error al actualizar la información.", "error");
+                }
+            } catch (error) {
+                mostrarToastPersonalizado("Error de conexión al servidor.", "error");
+            }
+        }
+
+        function cerrarModalPerfil() {
+            modalPerfil.classList.add('hidden');
+        }
+
+        function abrirModalPassword() {
+            // Limpiamos los campos por seguridad antes de abrir
+            document.getElementById('pass-antigua').value = '';
+            document.getElementById('pass-nueva').value = '';
+            document.getElementById('pass-confirmar').value = '';
+            modalPassword.classList.remove('hidden');
+        }
+
+        function cerrarModalPassword() {
+            modalPassword.classList.add('hidden');
+        }
+
+        // --- 7. LÓGICA DE TEMA Y PERSONALIZACIÓN ---
+        let currentTema = 'claro';
+        let currentFondo = 'default';
+        let currentBubbleColor = 'bg-zoo-dark'; 
+        let currentAvatar = '';
+
+        const modalTema = document.getElementById('modal-tema');
+
+        function abrirModalTema() {
+            if(isProfileMenuOpen) toggleProfileMenu();
+            modalTema.classList.remove('hidden');
+        }
+
+        function cerrarModalTema() {
+            modalTema.classList.add('hidden');
+        }
+
+        const modalGaleria = document.getElementById('modal-galeria-avatares');
+
+        function abrirGaleriaAvatares() {
+            modalGaleria.classList.remove('hidden');
+        }
+
+        function cerrarGaleriaAvatares() {
+            modalGaleria.classList.add('hidden');
+        }
+
+        function switchTabTema(tab) {
+            const btnTema = document.getElementById('tab-btn-tema');
+            const btnPerso = document.getElementById('tab-btn-perso');
+            const contentTema = document.getElementById('tab-content-tema');
+            const contentPerso = document.getElementById('tab-content-perso');
+
+            if(tab === 'tema') {
+                btnTema.className = 'flex-1 py-2 font-bold border-b-2 border-zoo text-zoo transition-colors';
+                btnPerso.className = 'flex-1 py-2 font-bold text-slate-400 hover:text-zoo border-b-2 border-transparent transition-colors';
+                contentTema.classList.remove('hidden');
+                contentPerso.classList.add('hidden');
+            } else {
+                btnPerso.className = 'flex-1 py-2 font-bold border-b-2 border-zoo text-zoo transition-colors';
+                btnTema.className = 'flex-1 py-2 font-bold text-slate-400 hover:text-zoo border-b-2 border-transparent transition-colors';
+                contentPerso.classList.remove('hidden');
+                contentTema.classList.add('hidden');
+            }
+        }
+
+        async function guardarPreferenciasBD() {
+            try {
+                await fetch(`${API_URL}/usuario/preferencias`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: usuarioActual.id,
+                        tema: currentTema,
+                        fondo: currentFondo,
+                        burbuja: currentBubbleColor,
+                        avatar: currentAvatar
+                    })
+                });
+            } catch (error) { console.error("Error al sincronizar preferencias en la nube"); }
+        }
+
+        // --- 8. ESCUCHADOR DE TEMA DEL SISTEMA (TIEMPO REAL) ---
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            // Solo hacer el cambio automático si el usuario tiene seleccionada la opción "Sistema"
+            if (localStorage.getItem('tema_zoopedia') === 'sistema') {
+                if (e.matches) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+        });
+
+        function setModoTema(modo, guardar = true) {
+            currentTema = modo;
+            const html = document.documentElement;
+            const btnClaro = document.getElementById('btn-tema-claro');
+            const btnOscuro = document.getElementById('btn-tema-oscuro');
+            const btnSistema = document.getElementById('btn-tema-sistema');
+
+            const claseInactiva = "flex flex-col items-center justify-center p-4 border-2 border-slate-200 text-slate-500 hover:border-slate-800 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all";
+            if(btnClaro) btnClaro.className = claseInactiva;
+            if(btnOscuro) btnOscuro.className = claseInactiva;
+            if(btnSistema) btnSistema.className = claseInactiva;
+
+            const claseActiva = "flex flex-col items-center justify-center p-4 border-2 border-zoo bg-zoo-light rounded-xl text-zoo-dark hover:shadow-md transition-all";
+            if (modo === 'claro' && btnClaro) btnClaro.className = claseActiva;
+            else if (modo === 'oscuro' && btnOscuro) btnOscuro.className = claseActiva;
+            else if (modo === 'sistema' && btnSistema) btnSistema.className = claseActiva;
+
+            let aplicarOscuro = false;
+            if (modo === 'oscuro') aplicarOscuro = true;
+            else if (modo === 'sistema') {
+                aplicarOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+
+            if (aplicarOscuro) html.classList.add('dark');
+            else html.classList.remove('dark');
+
+            if (guardar) {
+                localStorage.setItem('tema_zoopedia', modo);
+                mostrarToastPersonalizado(`Tema cambiado a: ${modo}`, "exito");
+                guardarPreferenciasBD();
+            }
+        }
+
+        function cambiarColorBurbuja(nuevoColor, guardar = true) {
+            currentBubbleColor = nuevoColor;
+            const burbujas = document.querySelectorAll('.burbuja-usuario');
+            burbujas.forEach(b => {
+                b.className = `${nuevoColor} burbuja-usuario text-white p-4 rounded-2xl rounded-br-none shadow-md max-w-[85%] sm:max-w-md leading-relaxed relative transition-colors duration-300`;
+            });
+            if (guardar) {
+                mostrarToastPersonalizado("Color de chat actualizado", "exito");
+                guardarPreferenciasBD();
+            }
+        }
+
+        function cambiarFondoChat(urlFondo, guardar = true) {
+            currentFondo = urlFondo;
+            const container = document.getElementById('chat-container');
+            if(urlFondo === 'default') container.style.background = '#f8fafc';
+            else if (urlFondo === 'black') container.style.background = '#0f172a';
+            else {
+                container.style.background = `url('${urlFondo}')`;
+                container.style.backgroundSize = 'cover';
+                container.style.backgroundPosition = 'center';
+            }
+            
+            if (guardar) {
+                mostrarToastPersonalizado("Fondo de chat actualizado", "exito");
+                guardarPreferenciasBD();
+            }
+        }
+
+        function cambiarFotoPerfil(urlFoto, guardar = true) {
+            currentAvatar = urlFoto;
+            const profileBtn = document.getElementById('profile-btn');
+            profileBtn.innerHTML = `<img src="${urlFoto}" class="w-full h-full object-cover rounded-full" alt="Perfil">`;
+            
+            const avataresChat = document.querySelectorAll('.avatar-usuario');
+            avataresChat.forEach(av => {
+                av.innerHTML = `<img src="${urlFoto}" class="w-full h-full object-cover rounded-full" alt="Perfil">`;
+            });
+            
+            if (guardar) {
+                mostrarToastPersonalizado("Foto de perfil actualizada", "exito");
+                guardarPreferenciasBD();
+                // Agregar esta línea aquí:
+                cerrarGaleriaAvatares();
+            }
+        }
+        function triggerSubirFoto() {
+            document.getElementById('input-foto-local').click();
+        }
+
+        document.getElementById('input-foto-local').addEventListener('change', function(e) {
+            if(e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    cambiarFotoPerfil(evt.target.result);
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        let toastTimer;
+        function mostrarToastPersonalizado(mensaje, tipo) {
+            const toast = document.getElementById('custom-toast');
+            const icono = document.getElementById('toast-icon');
+            const texto = document.getElementById('toast-message');
+
+            // 1. Limpiar clases previas (Reseteo visual)
+            toast.className = "fixed bottom-10 -left-[600px] bg-white px-6 py-4 rounded-2xl font-bold z-[100] flex items-center gap-3 transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] shadow-xl border-2";
+            icono.className = "text-white rounded-full w-8 h-8 flex items-center justify-center font-black text-lg shadow-sm";
+
+            // 2. Asignar el mensaje
+            texto.textContent = mensaje;
+
+            // 3. Pintar los bordes e iconos según el tipo de mensaje
+            if (tipo === 'exito') { // Amarillo
+                toast.classList.add('border-yellow-400');
+                icono.classList.add('bg-yellow-400');
+                icono.textContent = '✓';
+                texto.className = 'text-yellow-700 font-bold';
+            } else if (tipo === 'error') { // Rojo
+                toast.classList.add('border-red-500');
+                icono.classList.add('bg-red-500');
+                icono.textContent = 'X';
+                texto.className = 'text-red-700 font-bold';
+            } else if (tipo === 'alerta') { // Azul
+                toast.classList.add('border-blue-500');
+                icono.classList.add('bg-blue-500');
+                icono.textContent = '!';
+                texto.className = 'text-blue-700 font-bold';
+            }
+
+            // 4. Disparar animación de entrada (de izquierda a derecha)
+            setTimeout(() => {
+                toast.classList.remove('-left-[600px]');
+                toast.classList.add('left-5', 'sm:left-10');
+            }, 10);
+
+            // 5. Ocultar después de 4 segundos
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('left-5', 'sm:left-10');
+                toast.classList.add('-left-[600px]');
+            }, 4000);
+        }
+
+        async function cambiarPassword() {
+            const antigua = document.getElementById('pass-antigua').value;
+            const nueva = document.getElementById('pass-nueva').value;
+            const confirmar = document.getElementById('pass-confirmar').value;
+
+            if(!antigua || !nueva || !confirmar) {
+                mostrarToastPersonalizado("Por favor, llena todos los campos.", "error");
+                return;
+            }
+
+            if(nueva !== confirmar) {
+                mostrarToastPersonalizado("Las contraseñas nuevas no coinciden.", "alerta");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/usuario/cambiar_password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: usuarioActual.id,
+                        password_antigua: antigua,
+                        password_nueva: nueva
+                    })
+                });
+
+                const data = await response.json();
+                
+                if(response.ok) {
+                    mostrarToastPersonalizado("¡Contraseña actualizada con éxito!", "exito");
+                    // Limpiamos los campos y cerramos el modal 1.5s después para que el usuario alcance a ver el éxito
+                    setTimeout(() => {
+                        cerrarModalPassword();
+                    }, 1500);
+                } else {
+                    // Muestra "Contraseña antigua incorrecta" en color rojo
+                    mostrarToastPersonalizado(data.detail || "Error al cambiar la contraseña.", "error");
+                }
+            } catch(e) {
+                mostrarToastPersonalizado("Error de conexión al servidor.", "error");
+            }
+        }
+
+        function cerrarSesion() {
+            // 1. Eliminamos los datos de autenticación del navegador
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('usuario');
+            
+            // Nota: No usamos localStorage.clear() para no borrar las preferencias 
+            // de tema (claro/oscuro) que el usuario haya guardado en su navegador.
+
+            // 2. Redirigimos al usuario a la pantalla de login
+            window.location.href = "index.html";
+        }
+
+        // --- 8. LÓGICA DE CONFIGURACIÓN Y ELIMINACIÓN DE CUENTA ---
+        const modalConfig = document.getElementById('modal-configuracion');
+        const formEliminar = document.getElementById('form-eliminar-cuenta');
+        const btnMostrarEliminar = document.getElementById('btn-mostrar-eliminar');
+
+        function abrirModalConfig() {
+            if(isProfileMenuOpen) toggleProfileMenu();
+            // Resetear visualmente por si el usuario lo abrió antes y lo cerró a la mitad
+            formEliminar.classList.add('hidden');
+            btnMostrarEliminar.classList.remove('hidden');
+            document.getElementById('motivo-eliminar').value = '';
+            document.getElementById('pass-eliminar').value = '';
+            
+            modalConfig.classList.remove('hidden');
+        }
+
+        function cerrarModalConfig() {
+            modalConfig.classList.add('hidden');
+        }
+
+        function mostrarFormularioEliminar() {
+            // Oculta el botón principal y revela el formulario rojo
+            btnMostrarEliminar.classList.add('hidden');
+            formEliminar.classList.remove('hidden');
+        }
+
+        async function solicitarEliminacion() {
+            const motivo = document.getElementById('motivo-eliminar').value;
+            const password = document.getElementById('pass-eliminar').value;
+
+            if(!motivo || !password) {
+                mostrarToastPersonalizado("Por favor, llena todos los campos para continuar.", "alerta");
+                return;
+            }
+
+            try {
+                // Ahora sí mandamos la petición a la ruta real
+                const response = await fetch(`${API_URL}/usuario/solicitar_eliminacion`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: usuarioActual.id, 
+                        password: password, 
+                        motivo: motivo 
+                    })
+                });
+
+                const data = await response.json();
+
+                if(response.ok) {
+                    mostrarToastPersonalizado("Solicitud de eliminación enviada al administrador.", "exito");
+                    setTimeout(() => { cerrarModalConfig(); }, 2000);
+                } else {
+                    mostrarToastPersonalizado(data.detail || "La contraseña ingresada es incorrecta.", "error");
+                }
+            } catch (e) {
+                mostrarToastPersonalizado("Error de conexión al servidor.", "error");
+            }
+        }
+    </script>
+</body>
+</html>

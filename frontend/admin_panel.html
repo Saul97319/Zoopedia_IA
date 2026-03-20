@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoopedia IA - Admin Panel</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #dcfce7 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .animate-slide-in { animation: slideInRight 0.4s ease-out forwards; }
+
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        details[open] summary ~ * { animation: fadeIn 0.3s ease-in-out; }
+        
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease-in-out;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            transform: scale(0.9);
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .toast.show { transform: translateX(0); }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <div id="login-view" class="flex items-center justify-center min-h-screen animate-fade-in p-4">
+        <div class="glass-card w-full max-w-md p-8 rounded-3xl relative overflow-hidden">
+            <div class="absolute -top-16 -right-16 w-32 h-32 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl opacity-50"></div>
+            <div class="absolute -bottom-16 -left-16 w-32 h-32 bg-emerald-400 rounded-full mix-blend-multiply filter blur-2xl opacity-50"></div>
+            
+            <div class="relative z-10 text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-to-tr from-emerald-400 to-blue-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg mb-4 transform hover:rotate-12 transition duration-300">
+                    <i class="fa-solid fa-lion text-white text-4xl"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Zoopedia IA</h1>
+                <p class="text-slate-500 font-semibold mt-1">Panel de Administración</p>
+                <button onclick="abrirBandejaBajas()" class="bg-red-100 text-red-600 hover:bg-red-200 px-4 py-2 rounded-xl font-bold transition-colors shadow-sm ml-4 border border-red-200">
+                    <i class="fa-solid fa-user-minus"></i> Solicitudes de Baja
+                </button>
+            </div>
+
+            <form id="login-form" class="space-y-5 relative z-10">
+                <div>
+                    <label class="block text-sm font-bold text-slate-600 mb-1 ml-1"><i class="fa-solid fa-user mr-2 text-blue-500"></i>Usuario</label>
+                    <input type="text" id="username" placeholder="Ej. admin" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-0 outline-none transition bg-white/50" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-600 mb-1 ml-1"><i class="fa-solid fa-lock mr-2 text-blue-500"></i>Contraseña</label>
+                    <input type="password" id="password" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-0 outline-none transition bg-white/50" required>
+                </div>
+                <button type="submit" class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg transform hover:-translate-y-1 transition-all duration-300 flex justify-center items-center gap-2">
+                    Ingresar <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <p class="text-center text-xs text-slate-400 mt-4"><i class="fa-solid fa-shield-halved"></i> Conexión segura habilitada</p>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-view" class="hidden min-h-screen flex flex-col">
+        
+        <nav class="glass-card sticky top-0 z-50 px-6 py-4 flex justify-between items-center shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-emerald-400 to-blue-500 rounded-xl flex items-center justify-center shadow-md">
+                    <i class="fa-solid fa-lion text-white text-xl"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-emerald-600 hidden sm:block">Zoopedia IA</h1>
+                
+                <button onclick="abrirBandejaBajas()" class="bg-red-100 text-red-600 hover:bg-red-200 px-3 py-1.5 rounded-xl font-bold transition-colors shadow-sm ml-2 md:ml-4 border border-red-200 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-user-minus"></i> <span class="hidden sm:inline">Solicitudes de Baja</span>
+                </button>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden md:block">
+                    <p class="text-sm font-bold text-slate-800 leading-tight" id="user-display-name">Admin User</p>
+                    <p class="text-xs text-emerald-600 font-semibold"><i class="fa-solid fa-circle text-[8px] animate-pulse"></i> En línea</p>
+                </div>
+                <button onclick="logout()" class="p-2 px-4 bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 font-bold rounded-xl transition flex items-center gap-2">
+                    <i class="fa-solid fa-sign-out-alt"></i> <span class="hidden sm:inline">Salir</span>
+                </button>
+            </div>
+        </nav>
+
+        <main class="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full">
+            
+            <div class="glass-card rounded-2xl p-2 mb-8 flex flex-wrap sm:flex-nowrap gap-2 shadow-sm relative z-10">
+                <button onclick="switchTab('usuarios')" id="tab-usuarios" class="tab-btn flex-1 py-3 px-4 rounded-xl font-bold transition flex items-center justify-center gap-2 bg-blue-600 text-white shadow-md">
+                    <i class="fa-solid fa-users"></i> <span class="hidden md:inline">Usuarios</span>
+                </button>
+                <button onclick="switchTab('alertas')" id="tab-alertas" class="tab-btn flex-1 py-3 px-4 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-bell"></i> <span class="hidden md:inline">Alertas</span>
+                    <span id="badge-alertas" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full ml-1 animate-pulse">2</span>
+                </button>
+                <button onclick="switchTab('animales')" id="tab-animales" class="tab-btn flex-1 py-3 px-4 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paw"></i> <span class="hidden md:inline">Catálogo Animales</span>
+                </button>
+                <button onclick="switchTab('logs')" id="tab-logs" class="tab-btn flex-1 py-3 px-4 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-comments"></i> <span class="hidden md:inline">Logs Chat</span>
+                </button>
+            </div>
+
+            <div id="content-usuarios" class="tab-content animate-slide-in">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-3xl font-extrabold text-slate-800"><i class="fa-solid fa-users-gear text-blue-500 mr-2"></i> Gestión de Usuarios</h2>
+                    <div class="flex w-full md:w-auto gap-3">
+                        <div class="relative flex-grow">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="buscador-usuarios" oninput="filtrarUsuarios()" placeholder="Buscar usuario..." class="w-full pl-10 pr-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        </div>
+                        <button onclick="openModal('user-modal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold shadow-md hover:shadow-lg transition flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-plus"></i> Nuevo
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-l-4 border-l-blue-500">
+                        <div>
+                            <p class="text-sm text-slate-500 font-bold uppercase">Total Usuarios</p>
+                            <h3 class="text-3xl font-extrabold text-slate-800 mt-1">0</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-500 text-xl"><i class="fa-solid fa-users"></i></div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-l-4 border-l-emerald-500">
+                        <div>
+                            <p class="text-sm text-slate-500 font-bold uppercase">Visitantes</p>
+                            <h3 class="text-3xl font-extrabold text-slate-800 mt-1">0</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-500 text-xl"><i class="fa-solid fa-ticket"></i></div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl flex items-center justify-between border-l-4 border-l-amber-500">
+                        <div>
+                            <p class="text-sm text-slate-500 font-bold uppercase">Cuidadores</p>
+                            <h3 class="text-3xl font-extrabold text-slate-800 mt-1">0</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-500 text-xl"><i class="fa-solid fa-user-nurse"></i></div>
+                    </div>
+                </div>
+
+                <div class="space-y-4" id="users-list"></div>
+            </div>
+
+            <div id="content-alertas" class="tab-content hidden">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-3xl font-extrabold text-slate-800"><i class="fa-solid fa-triangle-exclamation text-red-500 mr-2"></i> Alertas de Emergencia</h2>
+                    <select id="filtro-alertas" onchange="filtrarAlertas()" class="px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-red-500 outline-none font-bold text-slate-600 bg-white">
+                        <option value="todas">Filtrar: Todas</option>
+                        <option value="pendientes">Pendientes</option>
+                        <option value="atendidas">Atendidas</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-2xl border-l-4 border-l-slate-400">
+                        <p class="text-sm text-slate-500 font-bold uppercase">Total Alertas</p>
+                        <h3 class="text-3xl font-extrabold text-slate-800 mt-1">24</h3>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border-l-4 border-l-red-500">
+                        <p class="text-sm text-slate-500 font-bold uppercase">Pendientes</p>
+                        <div class="flex items-end gap-2 mt-1">
+                            <h3 class="text-3xl font-extrabold text-red-600">2</h3>
+                            <span class="text-sm text-red-500 mb-1"><i class="fa-solid fa-arrow-up"></i> Urgente</span>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl border-l-4 border-l-emerald-500">
+                        <p class="text-sm text-slate-500 font-bold uppercase">Atendidas</p>
+                        <div class="flex items-end gap-2 mt-1">
+                            <h3 class="text-3xl font-extrabold text-emerald-600">22</h3>
+                            <span class="text-sm text-emerald-500 mb-1"><i class="fa-solid fa-check"></i> Resueltas</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4" id="alerts-list"></div>
+            </div>
+
+            <div id="content-animales" class="tab-content hidden">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-3xl font-extrabold text-slate-800"><i class="fa-solid fa-paw text-emerald-600 mr-2"></i> Catálogo de Animales</h2>
+                    <div class="flex w-full md:w-auto gap-3">
+                        <div class="relative flex-grow">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="buscador-animales" oninput="filtrarAnimales()" placeholder="Buscar animal..." class="w-full pl-10 pr-4 py-2 rounded-xl border-2 border-slate-200 focus:border-emerald-500 outline-none">
+                        </div>
+                        <input type="file" id="file-upload-animal" accept="application/pdf" class="hidden" onchange="prepararSubidaAnimal(event)">
+
+                        <button onclick="document.getElementById('file-upload-animal').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold shadow-md hover:shadow-lg transition flex items-center gap-2 whitespace-nowrap">
+                            <i class="fa-solid fa-file-arrow-up"></i> Nuevo Documento
+                        </button>
+                    </div>
+                </div>
+                <div class="glass-card p-4 rounded-2xl mb-6 flex justify-between items-center bg-emerald-50">
+                    <span class="font-bold text-emerald-800">Total Animales Registrados</span>
+                    <span class="bg-emerald-200 text-emerald-800 px-3 py-1 rounded-full font-bold">45 Especies</span>
+                </div>
+                <div class="space-y-4" id="animals-list"></div>
+            </div>
+
+            <div id="content-logs" class="tab-content hidden">
+                <div class="flex w-full md:w-auto gap-3">
+                    <div class="relative flex-grow min-w-[300px]">
+                        <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="buscador-logs" oninput="filtrarLogs()" placeholder="Buscar por palabra clave en chats..." class="w-full pl-10 pr-4 py-2 rounded-xl border-2 border-slate-200 focus:border-indigo-500 outline-none">
+                    </div>
+                </div>
+                <div class="space-y-6" id="logs-list"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="user-modal" class="modal-overlay fixed inset-0 flex items-center justify-center z-[100] p-4">
+        <div class="modal-content glass-card bg-white w-full max-w-2xl rounded-3xl p-6 md:p-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 class="text-2xl font-extrabold text-slate-800"><i class="fa-solid fa-user-plus text-blue-500 mr-2"></i> Nuevo Usuario</h3>
+                <button onclick="closeModal('user-modal')" class="text-slate-400 hover:text-red-500 text-xl transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="new-user-form" class="space-y-4" onsubmit="handleFormSubmit(event, 'user-modal', '¡Usuario creado exitosamente!')">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Nombre Completo *</label>
+                        <input type="text" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Email *</label>
+                        <input type="email" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Contraseña *</label>
+                        <input type="password" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Rol *</label>
+                        <select class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none" onchange="toggleRoleFields(this.value)">
+                            <option value="Visitante">Visitante</option>
+                            <option value="Cuidador">Cuidador</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-4">
+                    <p class="text-sm font-bold text-blue-600 mb-3"><i class="fa-solid fa-circle-info"></i> Información Adicional</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Teléfono</label>
+                            <input type="tel" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Género</label>
+                            <select class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                                <option>Masculino</option>
+                                <option>Femenino</option>
+                                <option>Otro</option>
+                            </select>
+                        </div>
+                        <div id="cuidador-fields" class="col-span-1 md:col-span-2 hidden grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-600 mb-1">Nacionalidad</label>
+                                <input type="text" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-600 mb-1">Edad</label>
+                                <input type="number" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                    <button type="button" onclick="closeModal('user-modal')" class="px-5 py-2 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md transition">Guardar Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="upload-animal-modal" class="modal-overlay fixed inset-0 flex items-center justify-center z-[100] p-4">
+        <div class="modal-content glass-card bg-white w-full max-w-2xl rounded-3xl p-6 md:p-8">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 class="text-2xl font-extrabold text-slate-800"><i class="fa-solid fa-file-pdf text-red-500 mr-2"></i> Integrar Documento a la IA</h3>
+                <button onclick="closeModal('upload-animal-modal')" class="text-slate-400 hover:text-red-500 text-xl transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <form id="upload-animal-form" class="space-y-5" onsubmit="subirDocumentoAnimal(event)">
+                <div>
+                    <label class="block text-sm font-bold text-slate-600 mb-1">Nombre del animal (Nombre del archivo final) *</label>
+                    <input type="text" id="nombre-archivo-pdf" required placeholder="Ej. 16_Lobo_Gris" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none font-bold text-slate-700">
+                </div>
+
+                <div class="bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                    <div class="w-16 h-16 bg-red-100 text-red-500 rounded-2xl flex items-center justify-center text-3xl mb-3 shadow-sm">
+                        <i class="fa-solid fa-file-pdf"></i>
+                    </div>
+                    <p id="preview-filename" class="font-bold text-slate-700 mb-1">documento.pdf</p>
+                    <p id="preview-filesize" class="text-xs text-slate-500 font-semibold">0.0 MB</p>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 items-start">
+                    <input type="checkbox" id="certificacion-ia" onchange="toggleUploadButton()" class="mt-1 w-5 h-5 accent-amber-500 cursor-pointer flex-shrink-0">
+                    <label for="certificacion-ia" class="text-sm text-amber-900 font-semibold cursor-pointer leading-relaxed">
+                        Entiendo que modificar, agregar o eliminar animales puede afectar directamente el conocimiento que posee la IA, el cual utiliza para brindar sus respuestas hacia el usuario. Además de que la inclusión de un nuevo animal implica haber revisado la asertividad y certificación de la información del animal que se va a incluir.
+                    </label>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                    <button type="button" onclick="closeModal('upload-animal-modal')" class="px-5 py-3 rounded-xl font-bold text-slate-600 bg-white border-2 border-slate-200 hover:bg-slate-50 transition">Cancelar</button>
+                    <button type="submit" id="btn-upload-animal" disabled class="px-5 py-3 rounded-xl font-bold text-white bg-slate-400 cursor-not-allowed transition flex items-center gap-2 shadow-md">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Agregar Animal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-user-modal" class="modal-overlay fixed inset-0 flex items-center justify-center z-[100] p-4">
+        <div class="modal-content glass-card bg-white w-full max-w-2xl rounded-3xl p-6 md:p-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h3 class="text-2xl font-extrabold text-slate-800"><i class="fa-solid fa-pen text-blue-500 mr-2"></i> Editar Usuario</h3>
+                <button onclick="closeModal('edit-user-modal')" class="text-slate-400 hover:text-red-500 text-xl transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="edit-user-form" class="space-y-4" onsubmit="guardarEdicionUsuario(event)">
+                <input type="hidden" id="edit-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Nombre Completo *</label>
+                        <input type="text" id="edit-nombre" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Email *</label>
+                        <input type="email" id="edit-email" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Teléfono</label>
+                        <input type="tel" id="edit-telefono" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Rol *</label>
+                        <select id="edit-rol" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                            <option value="Visitante">Visitante</option>
+                            <option value="Cuidador">Cuidador</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Género</label>
+                        <select id="edit-genero" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+                    <button type="button" onclick="closeModal('edit-user-modal')" class="px-5 py-2 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md transition">Actualizar Datos</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="modal-bajas" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden p-6 relative">
+                <button onclick="cerrarBandejaBajas()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+                <h2 class="text-xl font-bold text-red-600 mb-4 border-b pb-2"><i class="fa-solid fa-user-minus"></i> Peticiones de Eliminación de Cuenta</h2>
+                
+                <div id="lista-bajas" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                    </div>
+            </div>
+        </div>
+
+    <script>
+        // Agregar esto al inicio de tus scripts del admin_panel
+        const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
+
+        async function abrirBandejaBajas() {
+            document.getElementById('modal-bajas').classList.remove('hidden');
+            cargarSolicitudesBajas();
+        }
+
+        function cerrarBandejaBajas() {
+            document.getElementById('modal-bajas').classList.add('hidden');
+        }
+
+        async function cargarSolicitudesBajas() {
+            const contenedor = document.getElementById('lista-bajas');
+            contenedor.innerHTML = '<p class="text-slate-500 text-center py-4">Cargando solicitudes...</p>';
+
+            try {
+                const res = await fetch(`${API_URL}/admin/solicitudes_eliminacion?admin_id=${usuarioAdmin.id}`);
+                const data = await res.json();
+
+                if (data.solicitudes.length === 0) {
+                    contenedor.innerHTML = '<p class="text-slate-400 text-center py-8 font-bold"><i class="fa-solid fa-check-circle text-2xl block mb-2 text-green-400"></i>No hay peticiones de baja pendientes.</p>';
+                    return;
+                }
+
+                contenedor.innerHTML = '';
+                data.solicitudes.forEach(sol => {
+                    contenedor.innerHTML += `
+                        <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between gap-4">
+                            <div>
+                                <p class="font-bold text-slate-800">${sol.nombre} <span class="text-xs text-slate-500 font-normal">(${sol.email})</span></p>
+                                <p class="text-sm text-red-700 mt-1 bg-white p-2 rounded border border-red-100"><strong>Motivo:</strong> "${sol.motivo}"</p>
+                            </div>
+                            <div class="flex flex-row sm:flex-col gap-2 min-w-[120px]">
+                                <button onclick="aprobarBaja(${sol.id})" class="flex-1 bg-red-600 text-white font-bold py-1.5 px-3 rounded-lg hover:bg-red-700 transition-colors text-sm shadow-sm">Aprobar Baja</button>
+                                <button onclick="rechazarBaja(${sol.id})" class="flex-1 bg-white text-slate-600 border border-slate-300 font-bold py-1.5 px-3 rounded-lg hover:bg-slate-50 transition-colors text-sm">Rechazar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                contenedor.innerHTML = '<p class="text-red-500 text-center py-4">Error al cargar datos.</p>';
+            }
+        }
+
+        async function aprobarBaja(userId) {
+            if(!confirm("¿Estás seguro de eliminar PERMANENTEMENTE esta cuenta?")) return;
+            try {
+                // Reutiliza tu ruta de eliminación existente (la que ya borra al usuario y sus chats)
+                await fetch(`${API_URL}/admin/usuario/${userId}?admin_id=${usuarioAdmin.id}`, { method: 'DELETE' });
+                cargarSolicitudesBajas(); // Recargar lista
+            } catch(e) { alert("Error al procesar"); }
+        }
+
+        async function rechazarBaja(userId) {
+            try {
+                await fetch(`${API_URL}/admin/rechazar_eliminacion/${userId}?admin_id=${usuarioAdmin.id}`, { method: 'POST' });
+                cargarSolicitudesBajas(); // Recargar lista
+            } catch(e) { alert("Error al procesar"); }
+        }
+    </script>
+    
+    <script>
+
+        // --- SISTEMA DE NOTIFICACIONES TOAST ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const typeStyles = {
+                success: 'bg-emerald-500',
+                error: 'bg-red-500',
+                warning: 'bg-amber-500',
+                info: 'bg-blue-500'
+            };
+            
+            toast.className = `toast text-white px-6 py-3 rounded-xl shadow-lg font-bold flex items-center gap-2 ${typeStyles[type] || typeStyles.info}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${message}`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // --- 2. LÓGICA DE LOGIN CONECTADA AL BACKEND ---
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const btnSubmit = this.querySelector('button[type="submit"]');
+            
+            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/auth/login", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, password: password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.usuario.rol === "Visitante") {
+                        showToast("Los visitantes no pueden acceder aquí", "error");
+                        btnSubmit.innerHTML = 'Ingresar <i class="fa-solid fa-arrow-right"></i>';
+                        return;
+                    }
+
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                    
+                    showToast("¡Bienvenido al Panel de Administración!", "success");
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast(data.detail || "Credenciales incorrectas", "error");
+                    btnSubmit.innerHTML = 'Ingresar <i class="fa-solid fa-arrow-right"></i>';
+                }
+            } catch (error) {
+                // Comportamiento local simulado si no hay backend levantado
+                showToast("Simulando login local (Sin Backend)", "warning");
+                localStorage.setItem('access_token', 'mock_token');
+                localStorage.setItem('usuario', JSON.stringify({ id: 99, nombre: 'Admin Local', rol: 'Admin' }));
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        });
+
+        // Función unificada de Logout
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('usuario');
+            showToast("Sesión cerrada correctamente", "info");
+            setTimeout(() => { window.location.href = "index.html"; }, 800);
+        }
+
+        // --- 3. GESTIÓN DE TABS ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-blue-600', 'bg-red-500', 'bg-emerald-600', 'bg-indigo-500', 'text-white', 'shadow-md');
+                el.classList.add('text-slate-500');
+            });
+
+            const content = document.getElementById('content-' + tabId);
+            content.classList.remove('hidden');
+            content.classList.remove('animate-slide-in');
+            void content.offsetWidth; 
+            content.classList.add('animate-slide-in');
+
+            const btn = document.getElementById('tab-' + tabId);
+            btn.classList.remove('text-slate-500');
+            btn.classList.add('text-white', 'shadow-md');
+            
+            if(tabId === 'usuarios') btn.classList.add('bg-blue-600');
+            if(tabId === 'alertas') btn.classList.add('bg-red-500');
+            if(tabId === 'animales') btn.classList.add('bg-emerald-600');
+            if(tabId === 'logs') btn.classList.add('bg-indigo-500');
+        }
+
+        // --- 4. RENDERIZADO DE DATOS ---
+        function renderAlerts(alertas = [], actualizarGlobal = true) {
+            if (actualizarGlobal) {
+                window.alertasCargadas = alertas;
+            }
+            const container = document.getElementById('alerts-list');
+            
+            // 1. Actualizar los contadores visuales superiores
+            const total = alertas.length;
+            const atendidas = alertas.filter(a => a.titulo.includes('[RESUELTO]')).length;
+            const pendientes = total - atendidas;
+            const badge = document.getElementById('badge-alertas');
+            if (badge) {
+                badge.innerText = pendientes; // Le ponemos el número real
+                
+                // Si hay 0 alertas, ocultamos la bolita roja para no estresar al admin
+                if (pendientes === 0) {
+                    badge.classList.add('hidden');
+                } else {
+                    badge.classList.remove('hidden');
+                }
+            }
+            
+            document.querySelectorAll('#content-alertas h3.text-3xl')[0].innerText = total;
+            document.querySelectorAll('#content-alertas h3.text-3xl')[1].innerText = pendientes;
+            document.querySelectorAll('#content-alertas h3.text-3xl')[2].innerText = atendidas;
+
+            if (alertas.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 py-8">No hay alertas registradas.</p>';
+                return;
+            }
+
+            // 2. Dibujar cada alerta en la pantalla
+            container.innerHTML = alertas.map(a => {
+                const isPend = !a.titulo.includes('[RESUELTO]');
+                // Limpiamos el título para que se vea estético
+                const tituloLimpio = a.titulo.replace('[RESUELTO] ', '').replace('🚨 URGENTE: ', '');
+                
+                return `
+                <details class="glass-card rounded-2xl overflow-hidden shadow-sm border-l-4 ${isPend ? 'border-l-red-500' : 'border-l-emerald-500'} group mb-4">
+                    <summary class="p-4 md:p-5 cursor-pointer flex justify-between items-center hover:bg-slate-50 transition select-none">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center ${isPend ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-500'}">
+                                <i class="fa-solid ${isPend ? 'fa-triangle-exclamation' : 'fa-check'}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">${tituloLimpio}</h4>
+                                <p class="text-xs text-slate-500"><i class="fa-regular fa-clock"></i> ${a.fecha} | Reporta: ${a.usuario}</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition transform duration-300"></i>
+                    </summary>
+                    <div class="p-5 border-t border-slate-100 bg-slate-50/50">
+                        <div class="flex flex-wrap gap-3">
+                            ${isPend ? 
+                            `<button onclick="resolverAlerta(${a.id})" class="px-4 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg font-bold transition text-sm"><i class="fa-solid fa-check mr-1"></i> Marcar Atendida</button>` : 
+                            `<span class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg font-bold text-sm cursor-not-allowed"><i class="fa-solid fa-check-double mr-1"></i> Alerta Resuelta</span>`}
+                        </div>
+                    </div>
+                </details>
+                `;
+            }).join('');
+        }
+
+        function renderAnimals(animales = [], actualizarGlobal = true) {
+            if (actualizarGlobal) {
+                window.animalesCargados = animales; 
+            }
+            const container = document.getElementById('animals-list');
+            
+            // Actualizar el contador verde en la parte superior
+            const contadorElement = document.querySelector('#content-animales .bg-emerald-200');
+            if(contadorElement) {
+                contadorElement.innerText = `${animales.length} Especies en PDF`;
+            }
+
+            if (animales.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 py-8">No hay documentos PDF en la carpeta de animales.</p>';
+                return;
+            }
+
+            container.innerHTML = animales.map(a => `
+                <div class="glass-card rounded-2xl overflow-hidden shadow-sm flex items-center justify-between p-4 md:p-5 mb-3 hover:bg-emerald-50/30 transition border-l-4 border-l-emerald-500">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white shadow">
+                            <i class="fa-solid fa-file-pdf text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-lg capitalize">${a.nombre}</h4>
+                            <p class="text-sm text-slate-500"><i class="fa-solid fa-file-lines text-emerald-600"></i> Documento base: ${a.archivo}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="${a.url}" target="_blank" class="px-4 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-lg font-bold transition text-sm flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-eye"></i> <span class="hidden sm:inline">Ver PDF</span>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Nueva función para pedir los datos al servidor
+        async function recargarAnimales() {
+            try {
+                const res = await fetch("http://127.0.0.1:8000/admin/animales");
+                if (res.ok) {
+                    const data = await res.json();
+                    renderAnimals(data.animales);
+                } else {
+                    renderAnimals([]);
+                }
+            } catch (error) {
+                showToast("Error al cargar el catálogo de PDFs", "error");
+                renderAnimals([]);
+            }
+        }
+
+        function renderLogs(logs = [], actualizarGlobal = true) {
+            // Guardamos el historial en memoria para poder buscar sin pedirle de nuevo al servidor
+            if (actualizarGlobal) {
+                window.logsCargados = logs;
+            }
+
+            const container = document.getElementById('logs-list');
+            
+            // Actualizar título para que tenga más sentido
+            const tituloSeccion = document.querySelector('#content-logs h2');
+            if(tituloSeccion) tituloSeccion.innerHTML = '<i class="fa-solid fa-headset text-indigo-500 mr-2"></i> Historial Cuidadores';
+
+            if (logs.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 py-8">No se encontraron conversaciones con esa palabra clave.</p>';
+                return;
+            }
+
+            // --- NUEVA LÓGICA DE SUBRAYADO (MARCA TEXTOS) ---
+            // Obtenemos lo que está escrito en el buscador
+            const inputBuscador = document.getElementById('buscador-logs');
+            const terminoBuscado = inputBuscador ? inputBuscador.value.trim() : "";
+
+            // Función ayudante que envuelve el texto coincidente en color azul
+            const resaltar = (texto) => {
+                if (!terminoBuscado) return texto;
+                // Escapamos caracteres especiales para evitar errores
+                const escapado = terminoBuscado.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                // Regex: Ignora mayúsculas/minúsculas (gi)
+                const regex = new RegExp(`(${escapado})`, 'gi');
+                // Envolvemos la coincidencia en un span con fondo azul (marca textos)
+                return texto.replace(regex, '<span class="bg-blue-300 text-blue-900 font-extrabold px-1 rounded shadow-sm">$1</span>');
+            };
+            // ------------------------------------------------
+
+            container.innerHTML = logs.map(l => {
+                // Generamos los globos de chat para cada mensaje
+                const mensajesHTML = l.mensajes.map(m => {
+                    const esVisitante = m.rol === 'Usuario';
+                    return `
+                        <div class="flex items-start gap-3 ${esVisitante ? '' : 'flex-row-reverse'} mb-3">
+                            <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white shadow ${esVisitante ? 'bg-slate-400' : 'bg-amber-500'}">
+                                <i class="fa-solid ${esVisitante ? 'fa-user' : 'fa-user-nurse'} text-sm"></i>
+                            </div>
+                            <div class="${esVisitante ? 'bg-slate-100 border-slate-200 rounded-tl-none' : 'bg-amber-50 border-amber-100 rounded-tr-none'} border px-4 py-3 rounded-2xl w-full max-w-xl">
+                                <p class="text-sm ${esVisitante ? 'text-slate-700' : 'text-amber-900'}">${resaltar(m.contenido)}</p>
+                                <p class="text-[10px] text-slate-400 mt-1 ${esVisitante ? 'text-left' : 'text-right'}">${m.fecha}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                const tituloLimpio = l.titulo.replace('🚨 URGENTE: ', '').replace('[RESUELTO] ', '');
+
+                return `
+                    <details class="glass-card rounded-2xl overflow-hidden shadow-sm group mb-4 border-l-4 ${l.titulo.includes('[RESUELTO]') ? 'border-l-emerald-500' : 'border-l-red-500'}">
+                        <summary class="p-4 md:p-5 cursor-pointer flex justify-between items-center hover:bg-slate-50 transition select-none">
+                            <div>
+                                <span class="font-bold text-slate-800 text-lg"><i class="fa-regular fa-comments text-indigo-500 mr-2"></i> ${resaltar(tituloLimpio)}</span>
+                                <p class="text-sm text-slate-500 mt-1">Visitante: <strong class="text-slate-700">${resaltar(l.visitante)}</strong> | <span class="text-xs bg-slate-200 px-2 py-0.5 rounded-full">${l.mensajes.length} mensajes</span></p>
+                            </div>
+                            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition transform duration-300"></i>
+                        </summary>
+                        <div class="p-5 border-t border-slate-100 bg-slate-50/50">
+                            <div class="space-y-2">
+                                ${mensajesHTML}
+                            </div>
+                        </div>
+                    </details>
+                `;
+            }).join('');
+        }
+
+        function renderUsers(usuariosDeAPI, actualizarGlobal = true) {
+            // Solo sobrescribimos la memoria global si vienen datos frescos de la base de datos
+            if (actualizarGlobal) {
+                window.usuariosCargados = usuariosDeAPI; 
+            }
+            const container = document.getElementById('users-list');
+            if (!container) return;
+
+            document.querySelector('#content-usuarios h3.text-3xl').innerText = usuariosDeAPI.length;
+            document.querySelectorAll('#content-usuarios h3.text-3xl')[1].innerText = usuariosDeAPI.filter(u => u.rol === 'Visitante').length;
+            document.querySelectorAll('#content-usuarios h3.text-3xl')[2].innerText = usuariosDeAPI.filter(u => u.rol === 'Cuidador').length;
+
+            if (usuariosDeAPI.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 py-8">No hay usuarios registrados.</p>';
+                return;
+            }
+
+            container.innerHTML = usuariosDeAPI.map(u => {
+                const isStaff = u.rol === 'Cuidador' || u.rol === 'Admin';
+                const badgeColor = isStaff ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+                const avatarColor = isStaff ? 'bg-amber-400' : 'bg-emerald-400';
+                const iniciales = u.nombre ? u.nombre.substring(0, 2).toUpperCase() : 'US';
+
+                return `
+                <details class="glass-card rounded-2xl overflow-hidden shadow-sm group mb-3">
+                    <summary class="p-4 md:p-5 cursor-pointer flex justify-between items-center hover:bg-slate-50 transition select-none">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${avatarColor}">
+                                ${iniciales}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-lg">${u.nombre}</h4>
+                                <p class="text-sm text-slate-500">${u.email}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="hidden sm:inline-block px-3 py-1 rounded-full text-xs font-bold ${badgeColor}">${u.rol}</span>
+                            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition transform duration-300"></i>
+                        </div>
+                    </summary>
+                    <div class="p-5 border-t border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between gap-6">
+                        <div class="flex-1 space-y-2">
+                            <p class="text-sm"><strong class="text-slate-600">Teléfono:</strong> ${u.telefono || 'N/A'}</p>
+                            <p class="text-sm"><strong class="text-slate-600">Género:</strong> ${u.genero || 'N/A'}</p>
+                            <p class="text-sm"><strong class="text-slate-600">Fecha Nacimiento:</strong> ${u.fecha_nac || 'N/A'}</p>
+                        </div>
+                        <div class="flex gap-2 items-start">
+                            <button onclick="abrirModalEdicion(${u.id})" class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition flex items-center justify-center shadow" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="eliminarUsuario(${u.id}, '${u.nombre}')" class="w-10 h-10 rounded-xl bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition flex items-center justify-center shadow" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </details>
+                `;
+            }).join('');
+        }
+
+        // --- 5. CONTROL DE MODALES Y FORMULARIOS ---
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        function toggleRoleFields(role) {
+            const extraFields = document.getElementById('cuidador-fields');
+            if(role === 'Cuidador') {
+                extraFields.classList.remove('hidden');
+                extraFields.classList.add('grid');
+            } else {
+                extraFields.classList.add('hidden');
+                extraFields.classList.remove('grid');
+            }
+        }
+
+        // Cargar los datos del usuario en el modal
+// Cargar los datos del usuario en el modal
+function abrirModalEdicion(idUsuario) {
+    // 1. Buscamos el perfil completo del usuario usando el ID
+    const user = window.usuariosCargados.find(u => u.id === idUsuario);
+    
+    // Si por alguna razón no lo encuentra, mostramos error
+    if (!user) {
+        showToast("Error: No se pudo cargar la información del usuario", "error");
+        return;
+    }
+
+    // 2. Llenamos los campos del formulario con los datos encontrados
+    document.getElementById('edit-id').value = user.id;
+    document.getElementById('edit-nombre').value = user.nombre;
+    document.getElementById('edit-email').value = user.email;
+    
+    // Seleccionamos el rol correcto (ignorando mayúsculas/minúsculas por si acaso)
+    const selectRol = document.getElementById('edit-rol');
+    for (let i = 0; i < selectRol.options.length; i++) {
+        if (selectRol.options[i].value.toLowerCase() === user.rol.toLowerCase()) {
+            selectRol.selectedIndex = i;
+            break;
+        }
+    }
+
+    document.getElementById('edit-telefono').value = user.telefono || '';
+    
+    // Seleccionamos el género correcto
+    const selectGenero = document.getElementById('edit-genero');
+    if (user.genero) {
+        for (let i = 0; i < selectGenero.options.length; i++) {
+            if (selectGenero.options[i].value === user.genero) {
+                selectGenero.selectedIndex = i;
+                break;
+            }
+        }
+    } else {
+        selectGenero.selectedIndex = 0; // Por defecto "Masculino" si no tiene
+    }
+    
+    // 3. Finalmente abrimos el modal
+    openModal('edit-user-modal');
+}
+
+// Enviar los datos actualizados al backend
+    async function guardarEdicionUsuario(e) {
+        e.preventDefault();
+        
+        const idUsuario = document.getElementById('edit-id').value;
+        const adminActual = JSON.parse(localStorage.getItem('usuario'));
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
+
+        const payload = {
+            nombre: document.getElementById('edit-nombre').value,
+            email: document.getElementById('edit-email').value,
+            rol: document.getElementById('edit-rol').value,
+            telefono: document.getElementById('edit-telefono').value,
+            genero: document.getElementById('edit-genero').value
+        };
+
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/admin/usuario/${idUsuario}?admin_id=${adminActual.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                showToast("Usuario actualizado correctamente", "success");
+                closeModal('edit-user-modal');
+                recargarTablaUsuarios(); // Refresca los datos en vivo
+            } else {
+                const data = await response.json();
+                showToast(data.detail || "Error al actualizar", "error");
+            }
+        } catch (error) {
+            showToast("Error de conexión con el servidor", "error");
+        } finally {
+            btnSubmit.innerHTML = 'Actualizar Datos';
+        }
+    }
+
+        async function handleFormSubmit(e, modalId, successMessage) {
+            e.preventDefault();
+            
+            if (modalId === 'user-modal') {
+                const inputs = e.target.querySelectorAll('input, select');
+                const nuevoUser = {
+                    nombre: inputs[0].value,
+                    email: inputs[1].value,
+                    password: inputs[2].value,
+                    rol: inputs[3].value,
+                    telefono: inputs[4].value,
+                    genero: inputs[5].value
+                };
+                
+                try {
+                    const response = await fetch("http://127.0.0.1:8000/auth/registrar", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(nuevoUser)
+                    });
+                    
+                    if(response.ok) {
+                        showToast(successMessage, "success");
+                        closeModal(modalId);
+                        e.target.reset();
+                        recargarTablaUsuarios();
+                    } else {
+                        const data = await response.json();
+                        showToast(data.detail, "error");
+                    }
+                } catch(error) { 
+                    showToast("Error de conexión (Simulación local)", "warning"); 
+                    closeModal(modalId);
+                    e.target.reset();
+                }
+            } else {
+                closeModal(modalId);
+                showToast(successMessage, "success");
+                e.target.reset();
+            }
+        }
+
+        async function eliminarUsuario(idTarget, nombre) {
+            if(!confirm(`¿Eliminar definitivamente a ${nombre}? Esto borrará sus chats.`)) return;
+            
+            const usuarioStr = localStorage.getItem('usuario');
+            if(!usuarioStr) return;
+            const usuarioActual = JSON.parse(usuarioStr);
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/admin/usuario/${idTarget}?admin_id=${usuarioActual.id}`, { method: 'DELETE' });
+                if(response.ok) {
+                    showToast("Usuario eliminado correctamente", "success");
+                    recargarTablaUsuarios();
+                } else {
+                    showToast("Usuario eliminado localmente (Simulación)", "success");
+                }
+            } catch(e) { 
+                showToast("Simulando eliminación sin backend", "success"); 
+            }
+        }
+
+        async function recargarTablaUsuarios() {
+            const usuarioStr = localStorage.getItem('usuario');
+            if(!usuarioStr) return;
+            const usuarioActual = JSON.parse(usuarioStr);
+            
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/admin/usuarios?user_id=${usuarioActual.id}`);
+                if(res.ok) {
+                    const data = await res.json();
+                    renderUsers(data.usuarios);
+                } else {
+                    showToast("Error al cargar usuarios de la BD", "error");
+                    renderUsers([]); // Enviamos lista vacía
+                }
+            } catch(e) {
+                showToast("No hay conexión con el servidor", "error");
+                renderUsers([]); // Enviamos lista vacía
+            }
+        }
+
+        // --- 7. CARGA INICIAL Y PROTECCIÓN DE RUTA ---
+        window.onload = async () => {
+            const token = localStorage.getItem('access_token');
+            const usuarioStr = localStorage.getItem('usuario');
+            
+            if (!token || !usuarioStr) return; // Se queda en la pantalla de login
+            
+            const usuarioActual = JSON.parse(usuarioStr);
+            
+            const rolNormalizado = usuarioActual.rol.toLowerCase();
+            
+            if (rolNormalizado !== "admin" && rolNormalizado !== "administrador") {
+                showToast("Acceso denegado. Solo Administradores.", "error");
+                // Eliminamos la sesión falsa y recargamos la página del login (100% independiente)
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('usuario');
+                setTimeout(() => {
+                    window.location.reload(); 
+                }, 1500);
+                return;
+            }
+
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+            document.getElementById('app-view').classList.add('animate-fade-in');
+            document.getElementById('user-display-name').innerText = usuarioActual.nombre;
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/admin/usuarios?user_id=${usuarioActual.id}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderUsers(data.usuarios);
+                } else {
+                    showToast("Error al conectar con la base de datos", "error");
+                    renderUsers([]);
+                }
+            } catch (error) {
+                showToast("Backend apagado o inalcanzable", "error");
+                renderUsers([]);
+            }
+            
+            recargarAlertas();
+            recargarAnimales();
+            recargarLogs();
+        };
+        function filtrarUsuarios() {
+            // 1. Obtenemos lo que escribiste y lo pasamos a minúsculas
+            const termino = document.getElementById('buscador-usuarios').value.toLowerCase();
+            
+            // Si no hay datos cargados, no hacemos nada
+            if (!window.usuariosCargados) return;
+
+            // 2. Filtramos la lista global de usuarios
+            const usuariosFiltrados = window.usuariosCargados.filter(u => {
+                const nombreMatch = u.nombre && u.nombre.toLowerCase().includes(termino);
+                const emailMatch = u.email && u.email.toLowerCase().includes(termino);
+                const rolMatch = u.rol && u.rol.toLowerCase().includes(termino);
+                
+                // Retorna verdadero si coincide con alguno de los 3
+                return nombreMatch || emailMatch || rolMatch; 
+            });
+
+            // 3. Volvemos a dibujar la tabla con los filtrados (pasando "false" para no borrar la memoria)
+            renderUsers(usuariosFiltrados, false);
+        }
+        function filtrarAlertas() {
+            // 1. Obtenemos la opción seleccionada (todas, pendientes, o atendidas)
+            const filtro = document.getElementById('filtro-alertas').value;
+            
+            // Si no hay datos en memoria, cancelamos
+            if (!window.alertasCargadas) return;
+
+            // 2. Filtramos la lista según lo que contenga el título
+            const alertasFiltradas = window.alertasCargadas.filter(a => {
+                const esAtendida = a.titulo.includes('[RESUELTO]');
+                
+                if (filtro === 'pendientes') return !esAtendida;
+                if (filtro === 'atendidas') return esAtendida;
+                return true; // Si es 'todas', las dejamos pasar todas
+            });
+
+            // 3. Volvemos a dibujar la lista pasando 'false' para no borrar la memoria original
+            renderAlerts(alertasFiltradas, false);
+        }
+
+        function filtrarAnimales() {
+            // 1. Obtenemos lo que escribiste en el buscador
+            const termino = document.getElementById('buscador-animales').value.toLowerCase();
+            
+            // Si no hay datos cargados, cancelamos
+            if (!window.animalesCargados) return;
+
+            // 2. Filtramos la lista de PDFs
+            const animalesFiltrados = window.animalesCargados.filter(a => {
+                const nombreMatch = a.nombre && a.nombre.toLowerCase().includes(termino);
+                const archivoMatch = a.archivo && a.archivo.toLowerCase().includes(termino);
+                
+                return nombreMatch || archivoMatch; 
+            });
+
+            // 3. Redibujamos la lista pasando "false" para proteger la memoria original
+            renderAnimals(animalesFiltrados, false);
+        }
+
+        function filtrarLogs() {
+            // 1. Obtenemos la palabra clave escrita
+            const termino = document.getElementById('buscador-logs').value.toLowerCase();
+            
+            // Si no hay datos en memoria, cancelamos
+            if (!window.logsCargados) return;
+
+            // 2. Filtramos el historial de chats para obtener solo los que tienen la palabra
+            const logsFiltrados = window.logsCargados.filter(l => {
+                const tituloMatch = l.titulo && l.titulo.toLowerCase().includes(termino);
+                const visitanteMatch = l.visitante && l.visitante.toLowerCase().includes(termino);
+                const mensajesMatch = l.mensajes.some(m => 
+                    m.contenido && m.contenido.toLowerCase().includes(termino)
+                );
+                
+                return tituloMatch || visitanteMatch || mensajesMatch;
+            });
+
+            // --- NUEVA LÓGICA: ORDENAR POR PRIORIDAD (RANKING) ---
+            if (termino !== "") {
+                logsFiltrados.sort((a, b) => {
+                    // Verificamos si la palabra está en el título de A y de B
+                    const aEnTitulo = a.titulo && a.titulo.toLowerCase().includes(termino) ? 1 : 0;
+                    const bEnTitulo = b.titulo && b.titulo.toLowerCase().includes(termino) ? 1 : 0;
+                    
+                    // Si B tiene coincidencia en el título y A no, B se mueve hacia arriba.
+                    // Si ambos tienen o ninguno tiene, se quedan en su orden original (por fecha).
+                    return bEnTitulo - aEnTitulo; 
+                });
+            }
+            // ------------------------------------------------------
+
+            // 3. Volvemos a dibujar las tarjetas de chat con el nuevo orden
+            renderLogs(logsFiltrados, false);
+        }
+        async function recargarLogs() {
+            try {
+                const res = await fetch("http://127.0.0.1:8000/admin/logs/cuidadores");
+                if (res.ok) {
+                    const data = await res.json();
+                    renderLogs(data.logs);
+                } else {
+                    renderLogs([]);
+                }
+            } catch (error) {
+                showToast("Error al cargar historial de chats", "error");
+                renderLogs([]);
+            }
+        }
+        async function recargarAlertas() {
+            const usuarioStr = localStorage.getItem('usuario');
+            if(!usuarioStr) return;
+            const usuarioActual = JSON.parse(usuarioStr);
+            
+            try {
+                // Usamos el endpoint de cuidador que trae todas las conversaciones
+                const res = await fetch(`http://127.0.0.1:8000/cuidador/alertas?user_id=${usuarioActual.id}`);
+                if(res.ok) {
+                    const data = await res.json();
+                    renderAlerts(data.alertas);
+                } else {
+                    renderAlerts([]);
+                }
+            } catch(e) {
+                showToast("Error al conectar con el servidor de alertas", "error");
+                renderAlerts([]);
+            }
+        }
+
+        async function resolverAlerta(conversacionId) {
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/chat/resolver/${conversacionId}`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    showToast('Alerta marcada como Atendida exitosamente', 'success');
+                    recargarAlertas(); // Refrescamos los datos
+                } else {
+                    showToast('Error al actualizar la alerta', 'error');
+                }
+            } catch(e) {
+                showToast('Error de conexión', 'error');
+            }
+        }
+
+        // --- LÓGICA DE SUBIDA DE PDFS DE ANIMALES ---
+        let archivoSeleccionado = null;
+
+        function prepararSubidaAnimal(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            archivoSeleccionado = file;
+            
+            // Sugerir nombre sin extensión (.pdf)
+            const nombreSinExtension = file.name.replace(/\.[^/.]+$/, "");
+            document.getElementById('nombre-archivo-pdf').value = nombreSinExtension;
+            
+            // Actualizar interfaz visual
+            document.getElementById('preview-filename').innerText = file.name;
+            document.getElementById('preview-filesize').innerText = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+            
+            // Resetear casilla de seguridad y bloquear botón
+            document.getElementById('certificacion-ia').checked = false;
+            toggleUploadButton();
+            
+            openModal('upload-animal-modal');
+            
+            // Limpiar el input para permitir seleccionar el mismo archivo si se cancela
+            event.target.value = '';
+        }
+
+        function toggleUploadButton() {
+            const checkbox = document.getElementById('certificacion-ia');
+            const btn = document.getElementById('btn-upload-animal');
+            
+            if (checkbox.checked) {
+                btn.disabled = false;
+                btn.classList.remove('bg-slate-400', 'cursor-not-allowed');
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            } else {
+                btn.disabled = true;
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.add('bg-slate-400', 'cursor-not-allowed');
+            }
+        }
+
+        async function subirDocumentoAnimal(e) {
+            e.preventDefault();
+            if (!archivoSeleccionado) return;
+            
+            const btnSubmit = document.getElementById('btn-upload-animal');
+            const nombreArchivo = document.getElementById('nombre-archivo-pdf').value.trim();
+            
+            if (!nombreArchivo) {
+                showToast("Por favor ingresa un nombre para el archivo", "warning");
+                return;
+            }
+
+            // Animación de carga
+            const textoOriginal = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+            btnSubmit.disabled = true;
+
+            // Empaquetar archivo y nombre para enviarlo
+            const formData = new FormData();
+            formData.append("file", archivoSeleccionado);
+            formData.append("nombre", nombreArchivo);
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/admin/animales/upload", {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    showToast("¡Documento integrado exitosamente a la IA!", "success");
+                    closeModal('upload-animal-modal');
+                    recargarAnimales(); // Refrescar la tabla
+                } else {
+                    const data = await response.json();
+                    showToast(data.detail || "Error al subir el archivo", "error");
+                }
+            } catch (error) {
+                showToast("Error de conexión con el servidor", "error");
+            } finally {
+                btnSubmit.innerHTML = textoOriginal;
+                toggleUploadButton(); // Reactivar si el checkbox sigue marcado
+            }
+        }
+
+    </script>
+</body>
+</html>

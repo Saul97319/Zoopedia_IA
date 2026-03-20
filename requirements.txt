@@ -1,0 +1,17 @@
+streamlit>=1.28.0
+pandas>=2.0.0
+langchain
+langchain-community
+langchain-google-genai
+faiss-cpu
+pypdf
+python-dotenv
+langchain-huggingface
+langchain-chroma
+sentence-transformers
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+psycopg2-binary>=2.9.0
+PyJWT>=2.8.0
+python-multipart

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoopedia - Comunidad y FAQ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4; /* Verde muy claro */
+            color: #166534;
+        }
+
+        /* Animaciones Personalizadas */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        /* Transiciones suaves para el acordeón FAQ */
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out, opacity 0.4s ease-in-out;
+            opacity: 0;
+        }
+        .faq-answer.open {
+            max-height: 500px;
+            opacity: 1;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        .faq-question.active .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Scrollbar personalizado para el foro */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #dcfce7;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #22c55e;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #16a34a;
+        }
+
+        /* Utilidades para los 3 puntitos */
+        .dropdown-menu {
+            display: none;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.2s ease;
+        }
+        .dropdown-menu.show {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+    </style>
+</head>
+<body class="antialiased min-h-screen relative pb-12">
+
+    <!-- Header / Hero Section -->
+    <header class="bg-green-600 text-white py-12 px-6 rounded-b-3xl shadow-xl relative overflow-hidden">
+        <!-- Botón para regresar al Login -->
+        <a href="index.html" class="absolute top-4 left-4 sm:top-6 sm:left-8 bg-white text-green-600 hover:bg-green-50 hover:text-green-800 transition-all duration-300 transform hover:-translate-x-1 hover:scale-105 px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl font-extrabold shadow-lg flex items-center gap-2 z-50 border-2 border-transparent hover:border-green-200">
+            <i class="fa-solid fa-arrow-left-long text-xl"></i>
+            <span class="hidden sm:inline">Regresar al Inicio</span>
+        </a>
+        <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style="background-image: radial-gradient(circle, #ffffff 2px, transparent 2px); background-size: 30px 30px;"></div>
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between relative z-10">
+            <div class="text-center md:text-left mb-6 md:mb-0 mt-14 sm:mt-0 sm:ml-32 relative z-10">
+                <h1 class="text-4xl md:text-6xl font-extrabold mb-3 tracking-tight">
+                    <i class="fa-solid fa-paw mr-2"></i> Zoopedia
+                </h1>
+                <p class="text-green-100 text-lg md:text-xl font-semibold">Tu ventana al mundo animal. Pregunta, aprende y descubre.</p>
+            </div>
+            <div class="text-6xl animate-float">
+                🦁🐘🦒
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 mt-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Columna Izquierda: FAQ -->
+        <section class="lg:col-span-1 flex flex-col gap-6">
+            <div class="bg-white rounded-3xl p-6 shadow-lg border border-green-100 animate-fade-in-up" style="animation-delay: 0.1s;">
+                <h2 class="text-2xl font-bold text-green-700 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-question text-green-500"></i> Preguntas Frecuentes
+                </h2>
+                
+                <div class="flex flex-col gap-3">
+                    <!-- Pregunta 1 -->
+                    <div class="border border-green-200 rounded-xl overflow-hidden bg-green-50">
+                        <button class="faq-question w-full text-left px-5 py-4 font-bold text-green-800 flex justify-between items-center hover:bg-green-100 transition-colors">
+                            <span>¿Qué es Zoopedia?</span>
+                            <i class="fa-solid fa-chevron-down faq-icon text-green-600"></i>
+                        </button>
+                        <div class="faq-answer px-5 text-green-700 text-sm bg-white">
+                            Zoopedia es una enciclopedia interactiva y asistente virtual diseñado para guiarte por el zoológico. Te brindamos información detallada sobre todas nuestras especies residentes.
+                        </div>
+                    </div>
+
+                    <!-- Pregunta 2 -->
+                    <div class="border border-green-200 rounded-xl overflow-hidden bg-green-50">
+                        <button class="faq-question w-full text-left px-5 py-4 font-bold text-green-800 flex justify-between items-center hover:bg-green-100 transition-colors">
+                            <span>¿Qué animales puedo consultar?</span>
+                            <i class="fa-solid fa-chevron-down faq-icon text-green-600"></i>
+                        </button>
+                        <div class="faq-answer px-5 text-green-700 text-sm bg-white">
+                            Actualmente contamos con fichas completas de elefantes, jirafas, rinocerontes, pingüinos, leones, tigres, cocodrilos, tiburones y muchos más. ¡Revisa el chat del visitante para explorar!
+                        </div>
+                    </div>
+
+                    <!-- Pregunta 3 -->
+                    <div class="border border-green-200 rounded-xl overflow-hidden bg-green-50">
+                        <button class="faq-question w-full text-left px-5 py-4 font-bold text-green-800 flex justify-between items-center hover:bg-green-100 transition-colors">
+                            <span>¿Puedo hablar con un cuidador real?</span>
+                            <i class="fa-solid fa-chevron-down faq-icon text-green-600"></i>
+                        </button>
+                        <div class="faq-answer px-5 text-green-700 text-sm bg-white">
+                            ¡Sí! Si la inteligencia artificial de la Zoopedia no puede resolver tu duda, puedes dejar tu pregunta aquí en el foro y nuestros cuidadores oficiales te responderán a la brevedad.
+                        </div>
+                    </div>
+
+                    <!-- Pregunta 4 -->
+                    <div class="border border-green-200 rounded-xl overflow-hidden bg-green-50">
+                        <button class="faq-question w-full text-left px-5 py-4 font-bold text-green-800 flex justify-between items-center hover:bg-green-100 transition-colors">
+                            <span>¿La información está actualizada?</span>
+                            <i class="fa-solid fa-chevron-down faq-icon text-green-600"></i>
+                        </button>
+                        <div class="faq-answer px-5 text-green-700 text-sm bg-white">
+                            Constantemente actualizamos nuestros documentos (como Guías y Fichas de Animales) basándonos en los últimos estudios biológicos y el estado actual de nuestros animales en el recinto.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <a href="centro_ayuda.html" class="flex justify-center items-center gap-2 w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-extrabold py-3 px-6 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02]">
+                        Haz clic aquí para ver preguntas frecuentes
+                        <i class="fa-solid fa-arrow-right-long animate-pulse"></i>
+                    </a>
+                </div>
+
+            </div>
+            
+            <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-3xl p-6 shadow-lg text-white text-center animate-fade-in-up" style="animation-delay: 0.2s;">
+            
+            <!-- Tarjeta Decorativa -->
+            <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-3xl p-6 shadow-lg text-white text-center animate-fade-in-up" style="animation-delay: 0.2s;">
+                <i class="fa-solid fa-tree text-5xl mb-4 opacity-80"></i>
+                <h3 class="text-xl font-bold mb-2">Ayúdanos a cuidar el planeta</h3>
+                <p class="text-green-50 text-sm">El 10% de nuestras entradas se destinan a la conservación de especies en peligro. ¡Gracias por ser parte!</p>
+            </div>
+        </section>
+
+        <!-- Columna Derecha: Foro de Discusión -->
+        <section class="lg:col-span-2 flex flex-col gap-6 animate-fade-in-up" style="animation-delay: 0.3s;">
+            <div class="bg-white rounded-3xl p-6 shadow-xl border border-green-100 flex-grow flex flex-col">
+                <div class="flex justify-between items-center mb-6 border-b border-green-100 pb-4">
+                    <h2 class="text-2xl font-bold text-green-700 flex items-center gap-2">
+                        <i class="fa-solid fa-comments text-green-500"></i> Foro de Exploradores
+                    </h2>
+                    <span id="connection-status" class="text-xs font-bold text-yellow-500 bg-yellow-100 px-3 py-1 rounded-full animate-pulse">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Conectando...
+                    </span>
+                </div>
+
+                <!-- Formulario Nueva Pregunta -->
+                <div class="bg-green-50 p-5 rounded-2xl mb-6 border border-green-200">
+                    <h3 class="text-sm font-bold text-green-800 mb-3"><i class="fa-solid fa-pen"></i> Escribe una nueva pregunta</h3>
+                    <div class="flex flex-col gap-3">
+                        <input type="text" id="post-author" placeholder="Tu Nombre o Apodo" class="w-full md:w-1/2 px-4 py-2 rounded-xl border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
+                        <textarea id="post-content" rows="3" placeholder="¿Qué te gustaría saber sobre los animales?" class="w-full px-4 py-3 rounded-xl border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all resize-none"></textarea>
+                        <div class="flex justify-end">
+                            <button id="btn-submit-post" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-xl transition-transform transform hover:scale-105 shadow-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-paper-plane"></i> Publicar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenedor de Posts -->
+                <div id="forum-feed" class="flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 flex-grow" style="max-height: 600px;">
+                    <!-- Los posts se inyectan aquí con JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal de Confirmación para Eliminar -->
+    <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl p-6 w-11/12 max-w-sm shadow-2xl transform scale-95 transition-transform" id="delete-modal-content">
+            <div class="text-center">
+                <i class="fa-solid fa-triangle-exclamation text-red-500 text-5xl mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">¿Eliminar mensaje?</h3>
+                <p class="text-gray-600 text-sm mb-6">Esta acción no se puede deshacer. El mensaje y sus respuestas desaparecerán del foro.</p>
+                <div class="flex gap-3 justify-center">
+                    <button id="btn-cancel-delete" class="px-5 py-2 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Cancelar</button>
+                    <button id="btn-confirm-delete" class="px-5 py-2 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-md">Sí, eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lógica JavaScript (Conexión a PostgreSQL vía API) -->
+    <!-- Lógica JavaScript (Conexión a PostgreSQL vía API) -->
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000/api/foro'; 
+        
+        let postsArray = [];
+        let postToDeleteId = null;
+
+        // 1. Cargar Posts
+        async function loadPosts() {
+            try {
+                document.getElementById('connection-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cargando...';
+                document.getElementById('connection-status').className = 'text-xs font-bold text-yellow-500 bg-yellow-100 px-3 py-1 rounded-full';
+                
+                const response = await fetch(`${API_BASE_URL}/posts`);
+                postsArray = await response.json();
+                
+                document.getElementById('connection-status').innerHTML = '<i class="fa-solid fa-circle-check"></i> Conectado';
+                document.getElementById('connection-status').className = 'text-xs font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full';
+                
+                renderPosts();
+            } catch (error) {
+                console.error("Error conectando a la API:", error);
+            }
+        }
+
+        // 2. Crear Nuevo Post
+        document.getElementById('btn-submit-post').addEventListener('click', async () => {
+            const authorInput = document.getElementById('post-author').value.trim() || 'Visitante Explorador';
+            const contentInput = document.getElementById('post-content').value.trim();
+            if (!contentInput) return;
+
+            const btn = document.getElementById('btn-submit-post');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+            btn.disabled = true;
+
+            try {
+                await fetch(`${API_BASE_URL}/posts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ author_name: authorInput, content: contentInput })
+                });
+                document.getElementById('post-content').value = '';
+                await loadPosts();
+            } catch (error) {
+                console.error("Error al publicar:", error);
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Publicar';
+                btn.disabled = false;
+            }
+        });
+
+        // 3. Crear Respuesta
+        window.submitReply = async function(postId, replyText) {
+            if(!replyText.trim()) return;
+            const authorName = document.getElementById('post-author').value.trim() || 'Comunidad Zoopedia';
+            try {
+                await fetch(`${API_BASE_URL}/posts/${postId}/respuestas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ author_name: authorName, content: replyText })
+                });
+                await loadPosts();
+            } catch (error) {
+                console.error("Error al responder:", error);
+            }
+        };
+
+        // 4. Modo Edición
+        window.startEditMode = function(postId) {
+            const post = postsArray.find(p => p.id === postId);
+            if (!post) return;
+            
+            document.getElementById(`dropdown-${postId}`).classList.remove('show');
+            
+            const contentArea = document.getElementById(`content-area-${postId}`);
+            contentArea.innerHTML = `
+                <textarea id="edit-input-${postId}" class="w-full px-3 py-2 mt-2 rounded-xl border border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all resize-none text-sm">${post.content}</textarea>
+                <div class="flex gap-2 mt-2 justify-end">
+                    <button onclick="renderPosts()" class="px-3 py-1 text-xs rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200">Cancelar</button>
+                    <button onclick="window.saveEdit(${postId})" class="px-3 py-1 text-xs rounded-lg bg-green-500 text-white hover:bg-green-600 shadow">Guardar</button>
+                </div>
+            `;
+        };
+
+        window.saveEdit = async function(postId) {
+            const newText = document.getElementById(`edit-input-${postId}`).value.trim();
+            if (!newText) return;
+            
+            try {
+                await fetch(`${API_BASE_URL}/posts/${postId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content: newText })
+                });
+                await loadPosts(); 
+            } catch (error) {
+                console.error("Error al editar:", error);
+            }
+        };
+
+        // 5. Eliminación (Modal)
+        const modal = document.getElementById('delete-modal');
+        const modalContent = document.getElementById('delete-modal-content');
+        
+        window.showDeleteModal = function(postId) {
+            postToDeleteId = postId;
+            document.getElementById(`dropdown-${postId}`).classList.remove('show');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.add('bg-opacity-50'); modalContent.classList.remove('scale-95'); }, 10);
+        };
+
+        function hideDeleteModal() {
+            modalContent.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); postToDeleteId = null; }, 200);
+        }
+
+        document.getElementById('btn-cancel-delete').addEventListener('click', hideDeleteModal);
+        
+        document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+            if (!postToDeleteId) return;
+            try {
+                await fetch(`${API_BASE_URL}/posts/${postToDeleteId}`, { method: 'DELETE' });
+                hideDeleteModal();
+                await loadPosts();
+            } catch (error) {
+                console.error("Error al eliminar:", error);
+                hideDeleteModal();
+            }
+        });
+
+        // 6. Funciones Visuales (Render)
+        const feedContainer = document.getElementById('forum-feed');
+
+        const formatDate = (dateString) => {
+            const date = new Date(dateString);
+            return isNaN(date) ? "Recientemente" : new Intl.DateTimeFormat('es-MX', { 
+                day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit' 
+            }).format(date);
+        };
+
+        const getAvatarColor = (name) => {
+            const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500'];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return colors[Math.abs(hash) % colors.length];
+        };
+
+        function renderPosts() {
+            feedContainer.innerHTML = '';
+            
+            if (postsArray.length === 0) {
+                feedContainer.innerHTML = `
+                    <div class="text-center py-10 text-green-400">
+                        <i class="fa-solid fa-leaf text-5xl mb-3 opacity-50"></i>
+                        <p class="font-bold">¡El foro está tranquilo!</p>
+                        <p class="text-sm">Sé el primero en hacer una pregunta a la comunidad.</p>
+                    </div>`;
+                return;
+            }
+
+            postsArray.forEach(post => {
+                const authorInitial = post.authorName ? post.authorName.charAt(0).toUpperCase() : '?';
+                const avatarColor = getAvatarColor(post.authorName || 'Anon');
+
+                const postEl = document.createElement('div');
+                postEl.className = 'bg-white border border-green-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow animate-fade-in-up';
+                
+                postEl.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${avatarColor}">
+                                ${authorInitial}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-sm">${post.authorName}</h4>
+                                <span class="text-xs text-gray-400"><i class="fa-regular fa-clock"></i> ${formatDate(post.createdAt)}</span>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <button onclick="document.getElementById('dropdown-${post.id}').classList.toggle('show')" class="text-gray-400 hover:text-green-600 transition-colors p-2 rounded-full hover:bg-green-50">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <!-- Menú desplegable con Editar y Eliminar -->
+                            <div class="dropdown-menu absolute right-0 mt-2 w-32 bg-white border border-gray-100 rounded-xl shadow-xl z-10" id="dropdown-${post.id}">
+                                <button onclick="window.startEditMode(${post.id})" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-t-xl transition-colors">
+                                    <i class="fa-solid fa-pen text-xs w-4"></i> Editar
+                                </button>
+                                <button onclick="window.showDeleteModal(${post.id})" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-xl transition-colors">
+                                    <i class="fa-solid fa-trash text-xs w-4"></i> Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 pl-13 post-content-area" id="content-area-${post.id}">
+                        <p class="text-gray-700 whitespace-pre-wrap">${post.content}</p>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-gray-50 pl-13">
+                        <div class="mb-3 flex flex-col gap-2">
+                            ${(post.replies || []).map(reply => `
+                                <div class="bg-gray-50 rounded-xl p-3 text-sm border border-gray-100">
+                                    <div class="flex justify-between mb-1">
+                                        <span class="font-bold text-gray-700 text-xs">${reply.author_name}</span>
+                                        <span class="text-[10px] text-gray-400">${formatDate(reply.created_at)}</span>
+                                    </div>
+                                    <p class="text-gray-600">${reply.content}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <input type="text" id="reply-input-${post.id}" placeholder="Escribe una respuesta..." class="flex-grow text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all">
+                            <button onclick="window.submitReply(${post.id}, document.getElementById('reply-input-${post.id}').value)" class="text-green-600 hover:text-green-800 transition-colors p-2 bg-green-50 hover:bg-green-100 rounded-lg">
+                                <i class="fa-solid fa-reply"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                feedContainer.appendChild(postEl);
+            });
+        }
+
+        // Lógica del Acordeón FAQ
+        document.querySelectorAll('.faq-question').forEach(button => {
+            button.addEventListener('click', () => {
+                const answer = button.nextElementSibling;
+                const isActive = button.classList.contains('active');
+                document.querySelectorAll('.faq-question').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.nextElementSibling.classList.remove('open');
+                });
+                if (!isActive) {
+                    button.classList.add('active');
+                    answer.classList.add('open');
+                }
+            });
+        });
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', loadPosts);
+    </script>
+</body>
+</html>

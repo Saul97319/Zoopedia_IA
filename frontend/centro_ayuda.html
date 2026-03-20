@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoopedia - Centro de Ayuda Completo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0fdf4;
+            color: #166534;
+        }
+
+        /* Acordeón */
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+        .faq-answer.open {
+            max-height: 800px; /* Expandido para respuestas más largas */
+            opacity: 1;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        .faq-icon {
+            transition: transform 0.3s ease;
+        }
+        .active .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #dcfce7; }
+        ::-webkit-scrollbar-thumb { background: #22c55e; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #16a34a; }
+
+        /* Categorías activas */
+        .cat-btn.active-cat {
+            background-color: #16a34a;
+            color: white;
+            border-color: #16a34a;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen relative pb-12">
+
+    <!-- Header - pt-24 y sm:pt-20 aseguran que el título no se encime con el botón flotante -->
+    <header class="bg-green-600 text-white pt-24 sm:pt-20 pb-10 px-6 rounded-b-3xl shadow-xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style="background-image: radial-gradient(circle, #ffffff 2px, transparent 2px); background-size: 30px 30px;"></div>
+        
+        <!-- Botón de Regreso -->
+        <a href="foro_dudas.html" class="absolute top-5 left-4 sm:top-6 sm:left-8 bg-white text-green-600 hover:bg-green-50 hover:text-green-800 transition-all duration-300 transform hover:-translate-x-1 hover:scale-105 px-4 py-2 rounded-2xl font-extrabold shadow-lg flex items-center gap-2 z-50">
+            <i class="fa-solid fa-arrow-left-long"></i>
+            <span class="hidden sm:inline">Regresar al foro</span>
+        </a>
+
+        <div class="max-w-4xl mx-auto text-center relative z-10">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-4">
+                <i class="fa-solid fa-book-open-reader mr-2"></i> Centro de Ayuda Zoopedia
+            </h1>
+            <p class="text-green-100 text-lg">Resuelve tus dudas sobre la plataforma y tu visita al Zoológico de Guadalajara.</p>
+            
+            <!-- Buscador con Normalizador -->
+            <div class="mt-8 relative max-w-2xl mx-auto">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                </div>
+                <input type="text" id="search-input" placeholder="Ej: ¿A que hora abre? ¿Como uso la IA? (No te preocupes por los acentos)" class="w-full pl-12 pr-4 py-4 rounded-2xl text-gray-800 shadow-lg focus:outline-none focus:ring-4 focus:ring-green-300 transition-all text-lg">
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 mt-8">
+        
+        <!-- Filtros de Categorías -->
+        <div class="flex flex-wrap justify-center gap-2 mb-8" id="category-filters">
+            <!-- Se llenarán con JS -->
+        </div>
+
+        <!-- Estadísticas rápidas -->
+        <div class="text-center mb-6 text-green-700 font-bold bg-green-50 py-2 rounded-full max-w-xs mx-auto border border-green-200 shadow-sm">
+            <i class="fa-solid fa-layer-group"></i> Mostrando <span id="faq-count" class="text-green-900 text-lg">0</span> preguntas
+        </div>
+
+        <!-- Contenedor de Preguntas -->
+        <div id="faq-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Las preguntas se inyectan aquí -->
+        </div>
+
+        <!-- Mensaje sin resultados -->
+        <div id="no-results" class="hidden text-center py-12 text-gray-500">
+            <i class="fa-solid fa-face-sad-tear text-5xl mb-4 text-green-300"></i>
+            <h3 class="text-2xl font-bold text-green-700">No encontramos resultados</h3>
+            <p>Intenta buscar con otras palabras o navega por las categorías.</p>
+        </div>
+
+    </main>
+
+    <!-- Script de Datos y Lógica con NORMALIZADOR -->
+    <script>
+        // Array Masivo de ~200 Preguntas organizadas por categorías
+        const faqData = [
+            // CATEGORÍA 1: PLATAFORMA ZOOPEDIA
+            { cat: "Plataforma Zoopedia", q: "¿Qué es Zoopedia?", a: "Es una plataforma interactiva diseñada para mejorar tu experiencia como visitante o cuidador, brindando información y asistencia en tiempo real mediante IA." },
+            { cat: "Plataforma Zoopedia", q: "¿Es gratis usar Zoopedia?", a: "Sí, la plataforma web es totalmente gratuita para los usuarios registrados." },
+            { cat: "Plataforma Zoopedia", q: "¿Zoopedia es una app oficial del Zoológico de Guadalajara?", a: "Es un proyecto de software diseñado para operar como una herramienta de apoyo e información en el contexto del Zoológico de Guadalajara." },
+            { cat: "Plataforma Zoopedia", q: "¿Necesito descargar algo para usar Zoopedia?", a: "No, Zoopedia funciona directamente desde tu navegador web (Chrome, Safari, Edge, etc)." },
+            { cat: "Plataforma Zoopedia", q: "¿Zoopedia funciona sin internet?", a: "No, necesitas conexión a internet para que el motor de IA y las bases de datos funcionen correctamente." },
+            { cat: "Plataforma Zoopedia", q: "¿En qué idiomas está disponible Zoopedia?", a: "Por el momento, la plataforma y el asistente virtual están diseñados para comunicarse principalmente en español." },
+            { cat: "Plataforma Zoopedia", q: "¿Zoopedia guarda mi ubicación GPS?", a: "No, la plataforma web no rastrea tu ubicación en tiempo real." },
+            { cat: "Plataforma Zoopedia", q: "¿Cuáles son los roles dentro de Zoopedia?", a: "Existen tres roles principales: Visitante (para consultar), Cuidador (personal del zoológico) y Administrador." },
+            { cat: "Plataforma Zoopedia", q: "¿Qué hace diferente a Zoopedia de Google?", a: "Zoopedia está entrenada con documentos, guías de visitantes y fichas técnicas específicas del zoológico, dando respuestas contextualizadas y sin publicidad." },
+            { cat: "Plataforma Zoopedia", q: "¿Puedo comprar boletos a través de Zoopedia?", a: "Actualmente Zoopedia es una herramienta informativa. La compra de boletos se realiza en la web oficial del Zoológico o en taquilla." },
+            { cat: "Plataforma Zoopedia", q: "¿Cómo reporto un error en la plataforma?", a: "Puedes usar la sección de Contacto o escribir un mensaje en el Foro de Dudas." },
+            { cat: "Plataforma Zoopedia", q: "¿Qué tecnologías usa Zoopedia?", a: "Utiliza Python, FastAPI, Inteligencia Artificial (RAG con ChromaDB), bases de datos PostgreSQL y HTML/Tailwind para la interfaz." },
+            { cat: "Plataforma Zoopedia", q: "¿Hay versión para Android o iPhone (iOS)?", a: "La web es responsiva, por lo que se adapta perfectamente a la pantalla de tu celular sin necesidad de instalar una app." },
+            { cat: "Plataforma Zoopedia", q: "¿Puedo subir fotos a Zoopedia?", a: "Por el momento, la interacción principal es textual a través del chat y el foro." },
+            { cat: "Plataforma Zoopedia", q: "¿Cómo sé si hay una nueva actualización?", a: "Verás avisos en la pantalla principal de Login cuando haya nuevas funciones disponibles." },
+            { cat: "Plataforma Zoopedia", q: "¿Puedo compartir mi cuenta de Zoopedia?", a: "Se recomienda que cada usuario tenga su propia cuenta para mantener un historial personalizado." },
+            { cat: "Plataforma Zoopedia", q: "¿La plataforma consume muchos datos móviles?", a: "No, Zoopedia está optimizada para cargar principalmente texto y elementos ligeros." },
+            { cat: "Plataforma Zoopedia", q: "¿Funciona en computadoras de escritorio?", a: "Sí, puedes ingresar desde cualquier navegador en PC, Mac, tabletas o celulares." },
+            { cat: "Plataforma Zoopedia", q: "¿La plataforma recopila mis conversaciones?", a: "Los datos de chat pueden guardarse temporalmente para dar contexto a la conversación, respetando políticas de privacidad." },
+
+            // CATEGORÍA 2: CUENTAS Y ACCESOS
+            { cat: "Cuentas y Accesos", q: "¿Cómo me registro en Zoopedia?", a: "En la pantalla principal, haz clic en 'Registrarme' y llena el formulario con tus datos personales." },
+            { cat: "Cuentas y Accesos", q: "¿Qué datos necesito para registrarme?", a: "Nombre completo, fecha de nacimiento, género, teléfono, correo electrónico y una contraseña segura." },
+            { cat: "Cuentas y Accesos", q: "¿Por qué no puedo usar el correo @zoopedia.com?", a: "Ese dominio es exclusivo para el registro del personal interno (cuidadores y administradores)." },
+            { cat: "Cuentas y Accesos", q: "¿Qué hago si olvidé mi contraseña?", a: "Debes contactar al soporte técnico del sistema o a un administrador para solicitar el restablecimiento." },
+            { cat: "Cuentas y Accesos", q: "¿Cómo elimino mi cuenta?", a: "Por integridad de la base de datos, solicita la baja directamente a un administrador en el foro." },
+            { cat: "Cuentas y Accesos", q: "¿Los cuidadores tienen una interfaz diferente?", a: "Sí, tienen acceso al 'Chat Cuidador', que incluye herramientas adicionales y reportes técnicos." },
+            { cat: "Cuentas y Accesos", q: "¿Cómo cierro mi sesión?", a: "Dentro de la plataforma, busca el botón de regresar o cerrar sesión para limpiar tu token de acceso." },
+            { cat: "Cuentas y Accesos", q: "¿Qué es el Panel de Administrador?", a: "Es una vista exclusiva donde el staff técnico puede gestionar usuarios y monitorear la base de datos PostgreSQL." },
+            { cat: "Cuentas y Accesos", q: "¿Mi información personal está segura?", a: "Sí, las contraseñas están encriptadas antes de guardarse en la base de datos." },
+            { cat: "Cuentas y Accesos", q: "¿Puedo usar Zoopedia sin iniciar sesión?", a: "Puedes acceder a las FAQ y leer el Foro, pero para usar el chat de la IA o publicar necesitas registrarte." },
+            { cat: "Cuentas y Accesos", q: "¿Por qué la fecha de nacimiento es obligatoria?", a: "Sirve para estadísticas de visitantes y para adaptar recomendaciones de contenido en el futuro." },
+            { cat: "Cuentas y Accesos", q: "¿Cómo me convierto en Cuidador en la app?", a: "El rol de Cuidador es asignado manualmente por el Administrador de Sistemas a los empleados reales." },
+            { cat: "Cuentas y Accesos", q: "¿Por qué la sesión se cierra sola a veces?", a: "Por seguridad, los tokens de acceso expiran después de cierto tiempo de inactividad." },
+            { cat: "Cuentas y Accesos", q: "¿Puedo cambiar mi correo registrado?", a: "No, el correo funciona como tu identificador principal. Debes crear una cuenta nueva si deseas usar otro correo." },
+            { cat: "Cuentas y Accesos", q: "¿Pueden los niños tener cuenta propia?", a: "Sugerimos que las cuentas sean manejadas por un adulto o tutor responsable." },
+
+            // CATEGORÍA 3: CHAT INTELIGENTE (IA)
+            { cat: "Chat Inteligente (IA)", q: "¿Cómo funciona el chat del visitante?", a: "Es un motor de Inteligencia Artificial que lee documentos del zoológico para responder tus preguntas de forma natural." },
+            { cat: "Chat Inteligente (IA)", q: "¿Le puedo preguntar cualquier cosa a la IA?", a: "La IA está configurada para responder sobre el zoológico. Si le preguntas algo fuera de contexto, podría no saber la respuesta." },
+            { cat: "Chat Inteligente (IA)", q: "¿La IA sabe dónde están los baños?", a: "Sí, te indicará las ubicaciones generales basándose en la Guía del Visitante." },
+            { cat: "Chat Inteligente (IA)", q: "¿Qué hago si la IA me da una respuesta incorrecta?", a: "La IA puede tener alucinaciones ocasionales. Si notas algo raro, repórtalo en el Foro." },
+            { cat: "Chat Inteligente (IA)", q: "¿El chat guarda mi historial de conversación?", a: "El historial se mantiene activo en la pantalla mientras no recargues la página." },
+            { cat: "Chat Inteligente (IA)", q: "¿Puedo hablar con un humano en el chat?", a: "El chat es exclusivo para la IA. Si necesitas ayuda humana, dirígete al Foro de Dudas." },
+            { cat: "Chat Inteligente (IA)", q: "¿Cuánto tarda en responder la IA?", a: "Generalmente entre 2 y 5 segundos, dependiendo de tu conexión y del servidor." },
+            { cat: "Chat Inteligente (IA)", q: "¿La IA entiende si escribo sin acentos?", a: "Sí, la IA usa procesamiento de lenguaje natural y entiende perfectamente aunque haya faltas de ortografía." },
+            { cat: "Chat Inteligente (IA)", q: "¿Qué es el RAG que usa la IA?", a: "RAG significa Retrieval-Augmented Generation. Le permite a la IA leer los PDFs de Zoopedia antes de contestarte." },
+            { cat: "Chat Inteligente (IA)", q: "¿La IA me puede organizar un itinerario?", a: "Sí, puedes pedirle: 'Sugiéreme una ruta de 3 horas', y lo armará con base en las exhibiciones." },
+            { cat: "Chat Inteligente (IA)", q: "¿La IA da consejos para curar a mi mascota?", a: "No, solo brinda información sobre los animales silvestres del zoológico. No sustituye a un veterinario." },
+            { cat: "Chat Inteligente (IA)", q: "¿El chat tiene límite de mensajes?", a: "No hay un límite estricto, puedes preguntar todo lo que quieras durante tu visita." },
+            { cat: "Chat Inteligente (IA)", q: "¿Puedo pedirle a la IA que hable en inglés?", a: "Sí, el modelo de IA puede traducir o comunicarse en inglés si se lo pides explícitamente." },
+            { cat: "Chat Inteligente (IA)", q: "¿La IA conoce promociones vigentes?", a: "La IA consulta datos pre-cargados, por lo que las promociones del día a día pueden no estar actualizadas." },
+            { cat: "Chat Inteligente (IA)", q: "¿Cómo borro mi chat con la IA?", a: "Simplemente recarga la página o presiona F5 y la conversación se reiniciará." },
+
+            // CATEGORÍA 4: FORO DE DUDAS
+            { cat: "Foro de Dudas", q: "¿Para qué sirve el Foro?", a: "Es un espacio público donde los visitantes hacen preguntas y reciben respuestas de otros usuarios o cuidadores oficiales." },
+            { cat: "Foro de Dudas", q: "¿Quién puede ver mis preguntas en el Foro?", a: "El foro es 100% público, todos los registrados en Zoopedia pueden leerlo." },
+            { cat: "Foro de Dudas", q: "¿Cómo edito un mensaje que publiqué?", a: "Busca tu mensaje, haz clic en los 'tres puntitos' a la derecha y selecciona 'Editar'." },
+            { cat: "Foro de Dudas", q: "¿Puedo borrar mis preguntas del foro?", a: "Sí, en el mismo menú de 'tres puntitos' tienes la opción 'Eliminar'." },
+            { cat: "Foro de Dudas", q: "¿Si elimino mi pregunta, se borran las respuestas de los demás?", a: "Sí, la eliminación borra en cascada todas las respuestas asociadas a esa pregunta." },
+            { cat: "Foro de Dudas", q: "¿Cuánto tiempo tarda en aparecer mi pregunta?", a: "Es inmediato. El foro hace peticiones a PostgreSQL y actualiza la pantalla al instante." },
+            { cat: "Foro de Dudas", q: "¿Puedo insultar o usar malas palabras?", a: "No. Mensajes ofensivos serán eliminados por los moderadores y tu cuenta podría ser suspendida." },
+            { cat: "Foro de Dudas", q: "¿El foro está conectado a la IA?", a: "No, el foro es para comunicación de humano a humano." },
+            { cat: "Foro de Dudas", q: "¿Hay un límite de caracteres para preguntar en el foro?", a: "Intenta que tus dudas sean concisas. El cuadro de texto es para dudas directas, no ensayos largos." },
+            { cat: "Foro de Dudas", q: "¿Cómo se asigna el color a mi letra/avatar en el foro?", a: "El sistema genera un color automáticamente basado en las letras de tu nombre." },
+            { cat: "Foro de Dudas", q: "¿Puedo usar el foro para quejas del parque?", a: "Sí, es un medio válido para expresar retroalimentación constructiva sobre el zoológico." },
+            { cat: "Foro de Dudas", q: "¿Cómo respondo a otra persona en el foro?", a: "Debajo del post de la persona, verás un campo de texto y un botón de flecha para enviar tu respuesta." },
+            { cat: "Foro de Dudas", q: "¿Los cuidadores responden en el foro?", a: "Sí, el personal oficial del zoológico puede entrar a resolver dudas que la comunidad no haya podido contestar." },
+            { cat: "Foro de Dudas", q: "¿Por qué el foro dice 'Sin conexión'?", a: "Significa que hay una interrupción con el servidor o base de datos PostgreSQL. Verifica tu internet." },
+            { cat: "Foro de Dudas", q: "¿Puedo publicar imágenes o fotos en el foro?", a: "Actualmente el foro es exclusivamente de texto para mantener la velocidad del sistema." },
+
+            // CATEGORÍA 5: BOLETOS Y TAQUILLA
+            { cat: "Boletos y Taquilla", q: "¿Cuáles son los tipos de boletos principales?", a: "Existen el Paquete GuadaZoo (básico), Paquete Premier y Paquete Diamante (todo incluido)." },
+            { cat: "Boletos y Taquilla", q: "¿Qué incluye el Paquete GuadaZoo?", a: "Entrada al zoológico, acceso a herpetario, selva tropical, museo interactivo, Monkeyland y presentación de aves." },
+            { cat: "Boletos y Taquilla", q: "¿Qué incluye el paquete Diamante?", a: "Entrada general, Safari Masai Mara, Acuario, Tren Panorámico, Teleférico SkyZoo y Antártida (Pingüinos)." },
+            { cat: "Boletos y Taquilla", q: "¿Qué edad se considera boleto de niño?", a: "De 3 a 11 años cumplidos pagan boleto infantil. Menores de 3 años entran gratis." },
+            { cat: "Boletos y Taquilla", q: "¿Hay descuentos para el INAPAM?", a: "Sí, presentando la credencial de INAPAM (tercera edad) vigente en taquillas se aplica un descuento." },
+            { cat: "Boletos y Taquilla", q: "¿Hay descuentos para estudiantes universitarios?", a: "Generalmente solo aplican promociones en temporadas designadas o convenios especiales." },
+            { cat: "Boletos y Taquilla", q: "¿Puedo comprar boletos por internet?", a: "Sí, la compra en línea está disponible en el sitio web oficial del Zoológico de Guadalajara." },
+            { cat: "Boletos y Taquilla", q: "¿Debo imprimir mi boleto digital?", a: "No es obligatorio, puedes mostrar el código QR o código de barras desde la pantalla de tu celular." },
+            { cat: "Boletos y Taquilla", q: "¿Puedo salir a mi carro y volver a entrar al zoológico?", a: "No. Una vez que sales por los torniquetes principales, el boleto pierde validez de reingreso." },
+            { cat: "Boletos y Taquilla", q: "¿Si llueve muy fuerte me devuelven mi dinero?", a: "No, el zoológico opera de forma normal bajo la lluvia, no hay reembolsos por condiciones climatológicas." },
+            { cat: "Boletos y Taquilla", q: "¿Aceptan tarjeta de crédito en taquilla?", a: "Sí, aceptan tarjetas Visa y Mastercard." },
+            { cat: "Boletos y Taquilla", q: "¿Tienen pases anuales o membresías?", a: "No, el Zoológico de Guadalajara no maneja sistema de membresías anuales actualmente." },
+            { cat: "Boletos y Taquilla", q: "¿Personas con discapacidad pagan boleto?", a: "Ingresan gratis presentando credencial o certificado médico. Su acompañante debe pagar boleto normal." },
+            { cat: "Boletos y Taquilla", q: "¿Dónde está la taquilla principal?", a: "El ingreso principal está en Av. Paseo del Zoológico 600, y hay otro acceso secundario por Calzada Independencia." },
+            { cat: "Boletos y Taquilla", q: "¿Puedo comprar entradas individuales al Safari o Acuario adentro?", a: "Sí, si compraste el paquete básico, puedes comprar los boletos extras directamente en la entrada de cada atracción." },
+            { cat: "Boletos y Taquilla", q: "¿Puedo pagar con dólares en taquilla?", a: "No, solo se acepta moneda nacional (Pesos Mexicanos) o pago con tarjeta bancaria." },
+            { cat: "Boletos y Taquilla", q: "¿Se puede cancelar mi compra de boletos en línea?", a: "Las compras en línea son finales, no se aceptan devoluciones ni cancelaciones." },
+            { cat: "Boletos y Taquilla", q: "¿Qué pasa si pierdo mi boleto físico adentro del parque?", a: "Debes cuidarlo en todo momento. Sin boleto o brazalete no podrás acceder a las atracciones que incluía." },
+            { cat: "Boletos y Taquilla", q: "¿Aceptan pagos con Apple Pay o transferencias SPEI en taquilla?", a: "Suelen aceptar pagos sin contacto básicos, pero no transferencias SPEI en la ventanilla." },
+
+            // CATEGORÍA 6: REGLAS Y HORARIOS
+            { cat: "Reglas y Horarios", q: "¿A qué hora abre y cierra el zoológico?", a: "El horario habitual es de Martes a Domingo de 10:00 am a 6:00 pm." },
+            { cat: "Reglas y Horarios", q: "¿Abren los días lunes?", a: "Generalmente está cerrado por mantenimiento, excepto en periodos vacacionales oficiales o puentes fuertes." },
+            { cat: "Reglas y Horarios", q: "¿Abren los días festivos (Ej. 25 de Diciembre o 1 de Enero)?", a: "Sí, usualmente abren en días festivos, pero se recomienda confirmar en sus redes oficiales." },
+            { cat: "Reglas y Horarios", q: "¿Hasta qué hora puedo ingresar al zoológico?", a: "Las taquillas suelen cerrar una o dos horas antes del cierre total del parque (alrededor de las 4:30 pm o 5:00 pm)." },
+            { cat: "Reglas y Horarios", q: "¿Puedo llevar a mi perrito o mascota?", a: "Estrictamente NO. Por bioseguridad y prevención de enfermedades de la fauna silvestre, ninguna mascota puede ingresar." },
+            { cat: "Reglas y Horarios", q: "¿Se permiten perros guía?", a: "Sí, los animales de servicio certificados están permitidos bajo un protocolo especial y revisión." },
+            { cat: "Reglas y Horarios", q: "¿Puedo llevar mi propia comida (lonches)?", a: "No se permite el ingreso de alimentos. Se retendrán en la entrada." },
+            { cat: "Reglas y Horarios", q: "¿Puedo ingresar botellas de agua o alimento para bebé?", a: "Sí, el agua natural embotellada, mamilas y papillas para bebé están permitidos." },
+            { cat: "Reglas y Horarios", q: "¿Puedo fumar o vapear adentro?", a: "No, por disposición legal y salud de los animales, todo el parque es libre de humo y vapor." },
+            { cat: "Reglas y Horarios", q: "¿Se puede dar de comer a los animales?", a: "Prohibido darles comida externa. Solo puedes alimentar a especies específicas (como las jirafas) con el alimento que el mismo zoológico proporciona." },
+            { cat: "Reglas y Horarios", q: "¿Puedo llevar pelotas, globos o papalotes?", a: "No. Los objetos voladores o ruidosos estresan enormemente a los animales y están prohibidos." },
+            { cat: "Reglas y Horarios", q: "¿Puedo meter mi bicicleta, patineta o scooter?", a: "No, el recorrido es exclusivamente peatonal para evitar accidentes." },
+            { cat: "Reglas y Horarios", q: "¿Está permitido volar drones?", a: "Totalmente prohibido por cuestiones de seguridad del espacio aéreo del parque y bienestar animal." },
+            { cat: "Reglas y Horarios", q: "¿Puedo usar Flash al tomar fotos?", a: "En exteriores sí, pero en el Acuario, Herpetario y Nocturnario está PROHIBIDO porque ciega a las especies." },
+            { cat: "Reglas y Horarios", q: "¿Qué pasa si golpeo los cristales de los exhibidores?", a: "Es motivo de llamada de atención severa o expulsión inmediata del parque por parte de seguridad." },
+            { cat: "Reglas y Horarios", q: "¿Se puede ingresar con bebidas alcohólicas?", a: "Absolutamente no. Cualquier bebida alcohólica será confiscada." },
+            { cat: "Reglas y Horarios", q: "¿Qué hago si pierdo de vista a un niño que viene conmigo?", a: "Avisa de inmediato al personal o guardia más cercano. El zoológico cuenta con protocolos de búsqueda ('Código Infante')." },
+            { cat: "Reglas y Horarios", q: "¿Se puede ingresar con bocinas Bluetooth?", a: "No, la contaminación acústica altera el comportamiento natural de los animales." },
+            { cat: "Reglas y Horarios", q: "¿Existe algún código de vestimenta?", a: "Se sugiere ropa muy cómoda y tenis. No se permite el acceso sin camisa o en traje de baño." },
+
+            // CATEGORÍA 7: SERVICIOS Y ACCESIBILIDAD
+            { cat: "Servicios y Accesibilidad", q: "¿Rentán carriolas para niños?", a: "Sí, cuentan con un módulo de renta de carriolas sencillas y dobles cerca del ingreso principal." },
+            { cat: "Servicios y Accesibilidad", q: "¿Rentán sillas de ruedas?", a: "Sí, la renta tiene un costo accesible. Generalmente piden dejar una identificación oficial como garantía." },
+            { cat: "Servicios y Accesibilidad", q: "¿El parque tiene muchas subidas y bajadas?", a: "Sí, al estar construido en los bordes de la Barranca de Huentitán, tiene pendientes que pueden ser cansadas." },
+            { cat: "Servicios y Accesibilidad", q: "¿Tienen paquetería o lockers para guardar mochilas?", a: "No, no hay servicio de guardabultos. Debes hacerte cargo de tus pertenencias." },
+            { cat: "Servicios y Accesibilidad", q: "¿Los baños tienen cambiadores de bebés?", a: "Sí, la mayoría de los módulos de sanitarios principales cuentan con mesas cambiadoras." },
+            { cat: "Servicios y Accesibilidad", q: "¿Tienen servicio de enfermería o primeros auxilios?", a: "Sí, hay módulos de paramédicos disponibles para atender raspones, desmayos o emergencias menores." },
+            { cat: "Servicios y Accesibilidad", q: "¿Hay cajeros automáticos (ATM)?", a: "Suele haber cajeros automáticos en la plazoleta externa de la entrada principal." },
+            { cat: "Servicios y Accesibilidad", q: "¿Hay bebederos gratis?", a: "Sí, existen bebederos de agua potable distribuidos en diferentes senderos del recorrido." },
+            { cat: "Servicios y Accesibilidad", q: "¿Tienen zona de lactancia?", a: "Puedes amamantar en cualquier área verde o banca del parque, pero la enfermería también puede brindarte privacidad." },
+            { cat: "Servicios y Accesibilidad", q: "¿Hay Wi-Fi gratis en el parque?", a: "La conectividad Wi-Fi pública es limitada o nula. Te recomendamos usar tus datos móviles." },
+            { cat: "Servicios y Accesibilidad", q: "¿Venden sombrillas o bloqueador solar adentro?", a: "En las tiendas de souvenirs puedes encontrar paraguas, gorras y algunos artículos de cuidado personal." },
+            { cat: "Servicios y Accesibilidad", q: "¿Hay objetos perdidos?", a: "Sí, puedes acudir a la oficina de Información Principal si extraviaste llaves, carteras o documentos." },
+            { cat: "Servicios y Accesibilidad", q: "¿El parque es amigable con sillas de ruedas?", a: "Existen rampas en la gran mayoría del recorrido y exhibiciones, aunque las pendientes naturales pueden requerir esfuerzo." },
+            { cat: "Servicios y Accesibilidad", q: "¿Cuánto me toma recorrer todo el zoológico?", a: "Dependiendo de tu ritmo y si incluyes atracciones como Safari y Acuario, entre 4 y 7 horas." },
+
+            // CATEGORÍA 8: ALIMENTOS Y RESTAURANTES
+            { cat: "Alimentos y Restaurantes", q: "¿Hay restaurantes adentro del zoológico?", a: "Sí, existen áreas de comida o 'Food Courts' con múltiples opciones de comida rápida, pizzas, hamburguesas y pollo." },
+            { cat: "Alimentos y Restaurantes", q: "¿Venden cerveza o alcohol?", a: "Al ser un parque familiar, la venta de alcohol no está permitida o es extremadamente restringida en áreas cerradas." },
+            { cat: "Alimentos y Restaurantes", q: "¿Hay áreas para sentarse a comer?", a: "Sí, hay diversas terrazas techadas, mesas con sombrillas y bancas disponibles sin costo." },
+            { cat: "Alimentos y Restaurantes", q: "¿Venden opciones de comida para veganos/vegetarianos?", a: "Las opciones pueden ser muy limitadas (ensaladas sencillas o snacks), es importante considerarlo." },
+            { cat: "Alimentos y Restaurantes", q: "¿Aceptan tarjeta en los puestos de comida?", a: "Los restaurantes principales aceptan tarjeta, pero los carritos de botanas o paletas suelen pedir efectivo." },
+            { cat: "Alimentos y Restaurantes", q: "¿Tienen microondas públicos para calentar comida de bebé?", a: "Puedes acercarte a las fuentes de sodas principales y solicitar de favor si te pueden calentar el biberón/papilla." },
+            { cat: "Alimentos y Restaurantes", q: "¿Es cara la comida adentro?", a: "Los precios son estándar de parque de diversiones, ligeramente superiores a un restaurante de comida rápida en la calle." },
+            { cat: "Alimentos y Restaurantes", q: "¿Venden hielo?", a: "En las fuentes de sodas puedes comprar bebidas frías, pero no suelen vender bolsas de hielo solas." },
+
+            // CATEGORÍA 9: TRANSPORTE Y ESTACIONAMIENTO
+            { cat: "Transporte y Estacionamiento", q: "¿Tienen estacionamiento propio?", a: "Sí, el zoológico cuenta con dos áreas grandes de estacionamiento controlado." },
+            { cat: "Transporte y Estacionamiento", q: "¿Cuánto cuesta el estacionamiento?", a: "Tiene una cuota de recuperación fija que pagas al momento de llegar. No es por hora." },
+            { cat: "Transporte y Estacionamiento", q: "¿Hay lugares exclusivos para discapacitados?", a: "Sí, existen cajones de estacionamiento preferencial cerca de las taquillas (requieren acreditación visible)." },
+            { cat: "Transporte y Estacionamiento", q: "¿Qué transporte público llega al zoológico?", a: "La estación 'Zoológico' de Mi Macro Calzada (Macrobús) te deja a unos pasos del ingreso de Calzada Independencia." },
+            { cat: "Transporte y Estacionamiento", q: "¿Hay sitio de taxis seguro afuera?", a: "Sí, a las afueras de los accesos principales es común encontrar unidades de taxi tradicional." },
+            { cat: "Transporte y Estacionamiento", q: "¿Dónde me puede dejar o recoger Uber/Didi?", a: "Cuentan con bahías de ascenso/descenso habilitadas al exterior de las puertas principales." },
+            { cat: "Transporte y Estacionamiento", q: "¿Puedo dejar mi motocicleta?", a: "Sí, el estacionamiento también cuenta con áreas y tarifas para motocicletas." },
+            { cat: "Transporte y Estacionamiento", q: "¿Puedo llegar en bicicleta?", a: "Sí, aunque debes asegurarla con tus propios candados en las áreas exteriores permitidas." },
+            { cat: "Transporte y Estacionamiento", q: "¿El estacionamiento es techado?", a: "No, es un estacionamiento a cielo abierto, por lo que los vehículos quedan expuestos al sol." },
+
+            // CATEGORÍA 10: ATRACCIONES Y RECORRIDOS
+            { cat: "Atracciones", q: "¿Qué es el Safari Masai Mara?", a: "Un recorrido interactivo guiado a bordo de un camión modificado, a través de una reserva africana de varias hectáreas." },
+            { cat: "Atracciones", q: "¿Cuánto dura el recorrido del Safari?", a: "Aproximadamente dura de 20 a 30 minutos." },
+            { cat: "Atracciones", q: "¿Qué es el teleférico SkyZoo?", a: "Es una atracción de canastillas aéreas que cruza por encima del parque ofreciendo vistas de la barranca y exhibidores." },
+            { cat: "Atracciones", q: "¿El SkyZoo es seguro para niños?", a: "Sí, mientras vayan sentados correctamente y acompañados de un adulto responsable. No está permitido mecer la canastilla." },
+            { cat: "Atracciones", q: "¿Puedo subir carriolas al SkyZoo?", a: "No, no hay espacio en las sillas. Hay una zona de 'estacionamiento' de carriolas en la estación de abordaje." },
+            { cat: "Atracciones", q: "¿Qué voy a ver en el Acuario?", a: "Tiburones gata, tiburones punta negra, mantarrayas, medusas, pirañas y cientos de peces tropicales en tanques inmersivos." },
+            { cat: "Atracciones", q: "¿El Acuario Michin está dentro del Zoológico?", a: "No, son dos instituciones diferentes. El Acuario del zoológico está en Huentitán, y el Michin en el centro." },
+            { cat: "Atracciones", q: "¿Qué es la Antártida (Reino de los Pingüinos)?", a: "Es un recinto cerrado que simula el clima polar, donde verás pingüinos Adelia y Gentoo nadando y jugando en hielo." },
+            { cat: "Atracciones", q: "¿Hace frío para el visitante en la zona de pingüinos?", a: "El exhibidor de los animales está a bajo cero, pero el área de pasillos de visitantes está climatizada cómodamente." },
+            { cat: "Atracciones", q: "¿De qué trata el Tren Panorámico?", a: "Es un tren sobre ruedas (no vías) que hace recorridos de transporte a lo largo del eje central del zoológico." },
+            { cat: "Atracciones", q: "¿El Tren Panorámico hace paradas para bajarme?", a: "Sí, tiene diferentes estaciones en las que puedes bajar o subir mostrando el boleto correspondiente." },
+            { cat: "Atracciones", q: "¿Dónde y cómo interactúo con las jirafas?", a: "En la terraza de alimentación del mirador africano. Ahí venden porciones de vegetales permitidos." },
+            { cat: "Atracciones", q: "¿Qué es Monkeyland?", a: "Un recinto espectacular para primates, sin rejas, donde caminas por senderos y puentes rodeado de diversas especies." },
+            { cat: "Atracciones", q: "¿Tienen espectáculos de animales?", a: "Sí, en el auditorio hay presentaciones educativas (show de aves rapaces y reptiles) en horarios predefinidos." },
+            { cat: "Atracciones", q: "¿Hay zoológico de contacto?", a: "Sí, está la sección del Rancho Veterinario, ideal para que niños acaricien animales domésticos de granja." },
+            { cat: "Atracciones", q: "¿Tienen osos polares?", a: "Actualmente no, ya que el clima de la ciudad y las políticas modernas no lo recomiendan." },
+            { cat: "Atracciones", q: "¿Qué animales hay en el Herpetario?", a: "Podrás observar decenas de especies de serpientes, pitones, cocodrilos, iguanas y ranas venenosas." },
+            { cat: "Atracciones", q: "¿Qué es la Villa Australiana?", a: "Un espacio tematizado donde habitan canguros rojos. En ciertos horarios puedes transitar por su pasillo central." },
+            { cat: "Atracciones", q: "¿Se puede interactuar con los leones o tigres?", a: "De ninguna manera. Son animales peligrosos contenidos en recintos de máxima seguridad. Solo observación a distancia." },
+            { cat: "Atracciones", q: "¿Dónde está la zona de los hipopótamos?", a: "Se ubican en exhibidores con cristal grueso templado para que puedas verlos caminando bajo el agua." },
+
+            // CATEGORÍA 11: GRUPOS Y EVENTOS
+            { cat: "Grupos y Eventos", q: "¿Hacen descuento a escuelas o visitas de estudio?", a: "Sí, tienen tarifas preferenciales pero se requiere hacer reservación previa en el departamento de Promoción y Grupos." },
+            { cat: "Grupos y Eventos", q: "¿Puedo hacer una fiesta infantil ahí?", a: "Sí, el zoológico cuenta con áreas y terrazas especiales que puedes rentar para festejos." },
+            { cat: "Grupos y Eventos", q: "¿Se puede rentar para eventos empresariales o posadas?", a: "Sí, hay espacios para convenciones o eventos corporativos, incluso fuera del horario normal (eventos nocturnos)." },
+            { cat: "Grupos y Eventos", q: "¿Tienen campamentos o recorridos nocturnos?", a: "En temporadas especiales el zoológico organiza campamentos o safaris nocturnos. Revisa siempre sus carteleras." },
+            { cat: "Grupos y Eventos", q: "¿Se permiten sesiones de fotos para quinceañeras, bodas o modelos?", a: "Sí, se permite pero se debe pagar una cuota o permiso especial por el uso de equipo de fotografía/video profesional." },
+            { cat: "Grupos y Eventos", q: "¿Dan pláticas para grupos de veterinarios?", a: "Las áreas educativas sí imparten cursos o pláticas a grupos especializados con previa gestión institucional." },
+            { cat: "Grupos y Eventos", q: "¿Tienen cursos de verano para niños?", a: "Sí, cada verano el zoológico abre programas semanales de talleres para niños." }
+        ];
+
+        // Referencias al DOM
+        const container = document.getElementById('faq-container');
+        const countSpan = document.getElementById('faq-count');
+        const filtersContainer = document.getElementById('category-filters');
+        const searchInput = document.getElementById('search-input');
+        const noResults = document.getElementById('no-results');
+
+        // Función Normalizadora Mágica:
+        // Convierte el texto eliminando acentos, diéresis y pasando todo a minúsculas.
+        // Ejemplo: "¿Qué tecnologías?" -> "que tecnologias?"
+        function normalizarTexto(texto) {
+            return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        }
+
+        // Extraer categorías únicas
+        const categories = ["Todas", ...new Set(faqData.map(item => item.cat))];
+        let currentCategory = "Todas";
+
+        // Inicializar Aplicación
+        function init() {
+            renderFilters();
+            renderFaqs(faqData);
+            
+            // Evento Buscador en tiempo real
+            searchInput.addEventListener('input', (e) => {
+                filterData(e.target.value, currentCategory);
+            });
+        }
+
+        // Renderizar botones de categorías
+        function renderFilters() {
+            filtersContainer.innerHTML = '';
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `cat-btn px-4 py-2 rounded-full font-bold border-2 border-green-200 text-green-700 bg-white hover:bg-green-100 transition-colors shadow-sm ${cat === "Todas" ? "active-cat" : ""}`;
+                btn.textContent = cat;
+                
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active-cat'));
+                    btn.classList.add('active-cat');
+                    currentCategory = cat;
+                    filterData(searchInput.value, currentCategory);
+                });
+                filtersContainer.appendChild(btn);
+            });
+        }
+
+        // Función Principal de Filtrado de alta eficiencia
+        function filterData(searchTerm, category) {
+            const termNormalizado = normalizarTexto(searchTerm.trim());
+            
+            const filtered = faqData.filter(item => {
+                const matchCat = category === "Todas" || item.cat === category;
+                
+                // Unimos pregunta y respuesta, normalizamos y comparamos
+                const textoCompleto = normalizarTexto(item.q + " " + item.a);
+                const matchText = textoCompleto.includes(termNormalizado);
+                
+                return matchCat && matchText;
+            });
+
+            renderFaqs(filtered);
+        }
+
+        // Construir el HTML de los Acordeones de Preguntas
+        function renderFaqs(data) {
+            container.innerHTML = '';
+            countSpan.textContent = data.length;
+
+            if(data.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            // Usamos innerHTML combinado para no sobrecargar las inserciones al DOM.
+            let htmlContent = '';
+            data.forEach((item, index) => {
+                htmlContent += `
+                    <div class="border-2 border-green-100 bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow h-fit">
+                        <button class="w-full text-left px-5 py-4 font-bold text-green-900 flex justify-between items-center bg-white hover:bg-green-50 transition-colors focus:outline-none" onclick="toggleFaq(${index})">
+                            <span class="pr-4 leading-tight">${item.q}</span>
+                            <div class="bg-green-100 p-2 rounded-full text-green-600 flex-shrink-0 faq-icon" id="icon-${index}">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                        </button>
+                        <div class="faq-answer px-5 text-gray-600 leading-relaxed border-t border-green-50 bg-green-50/50" id="answer-${index}">
+                            ${item.a}
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = htmlContent;
+        }
+
+        // Lógica de apertura/cierre del Acordeón visual
+        window.toggleFaq = function(index) {
+            const answer = document.getElementById(`answer-${index}`);
+            const icon = document.getElementById(`icon-${index}`);
+            
+            const isOpen = answer.classList.contains('open');
+
+            if (!isOpen) {
+                answer.classList.add('open');
+                icon.style.transform = "rotate(180deg)";
+            } else {
+                answer.classList.remove('open');
+                icon.style.transform = "rotate(0deg)";
+            }
+        };
+
+        // Arrancar
+        init();
+
+    </script>
+</body>
+</html>
