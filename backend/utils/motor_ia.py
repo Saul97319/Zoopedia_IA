@@ -28,7 +28,7 @@ class MotorIA_RAG:
         self.llm = ChatGoogleGenerativeAI(
             model="gemma-3-27b-it",
             google_api_key=self.google_api_key,
-            temperature=0.3 # Baja creatividad para que sea más factual
+            temperature=0.2 # Baja creatividad para que sea más factual
         )
         
        # self.chat_history = []  # Aquí guardaremos la conversación local
@@ -142,7 +142,7 @@ class MotorIA_RAG:
 
         # 3. Búsqueda de Contexto
         print(f"🔍 Buscando contexto en Chroma...")
-        docs = self.vectorstore.similarity_search(pregunta_busqueda, k=4)
+        docs = self.vectorstore.similarity_search(pregunta_busqueda, k=6)
         
         if not docs:
             return "No encontré información relevante en mis documentos."
@@ -150,9 +150,10 @@ class MotorIA_RAG:
         contexto_texto = "\n\n".join([doc.page_content for doc in docs])
 
         # 4. Prompt de Respuesta (El template que ya tenías se mantiene igual)
+        # 4. Prompt de Respuesta 
         template = """
         Eres Zoopedia, el experto oficial del Zoológico de Guadalajara. Tu tono es educativo, amable y profesional.
-        Tu misión es educar sobre los animales y guiar a los visitantes con información logística y de seguridad.
+        Tu única fuente de verdad es el CONTEXTO OFICIAL provisto.
         
         CONTEXTO OFICIAL (Base de datos):
         {contexto}
@@ -160,13 +161,12 @@ class MotorIA_RAG:
         PREGUNTA DEL USUARIO:
         {pregunta}
         
-        INSTRUCCIONES DE RAZONAMIENTO:
-        1. BUSCA LA RESPUESTA EXACTA: Si la respuesta está explícitamente en el contexto, respóndela directamente.
-        2. SI NO HAY RESPUESTA EXACTA (DEDUCCIÓN): No digas simplemente "No sé". Deduce con la lógica aclarando que es una deducción basada en su dieta o características.
-        3. SEGURIDAD: Nunca inventes datos que no estén en el contexto.
-        4. REGLAMENTO: Si preguntan sobre tocar o alimentar, usa el Reglamento para responder con firmeza pero amabilidad.
-        5. LOGÍSTICA: Sé servicial con temas de baños o comida.
-        
+        INSTRUCCIONES DE RAZONAMIENTO (CUMPLE AL 100%):
+        1. BUSCA LA RESPUESTA EXACTA: Responde basándote ÚNICA Y EXCLUSIVAMENTE en el CONTEXTO OFICIAL.
+        2. RESTRICCIÓN DE IGNORANCIA: Si la respuesta a la pregunta no aparece en el CONTEXTO OFICIAL, tu respuesta debe ser EXACTAMENTE y ÚNICAMENTE: "Lo siento, no tengo esa información en mis registros oficiales."
+        3. PROHIBICIÓN ESTRICTA: Tienes estrictamente PROHIBIDO complementar con conocimiento externo. NO uses frases como "Sin embargo...", "Pero...", o "Te puedo decir que..." si la información no está en el contexto. 
+        4. REGLAMENTO Y LOGÍSTICA: Si preguntan sobre tocar o alimentar, usa el Reglamento. Sé servicial con temas de baños o comida, basándote solo en lo que sepas del zoológico.
+        5. LIMITACIÓN DE RESPUESTA: Si la pregunta está fuera de contexto del zoológico Guadalajara, responde con "Lo siento, mi modelo se limita a responder preguntas estrechamente relacionadas con el zoológico de Guadalajara. ¡Preguntame algo más acerca del zoológico!"
         Respuesta:
         """
         

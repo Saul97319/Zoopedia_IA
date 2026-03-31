@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zoopedia IA - Chat Visitante</title>
+    <link rel="icon" type="image/png" href="assets/logo_favicon.png">
     <!-- Tailwind CSS para diseño rápido y moderno -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome para íconos -->
@@ -125,16 +126,8 @@
 
         <!-- (4) Historial de Conversaciones -->
         <div class="flex-1 overflow-y-auto p-4 space-y-6">
-            <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Hoy</h3>
-                <div class="space-y-1">
-                    <button class="w-full text-left px-3 py-2 rounded-lg bg-zoo-light text-zoo-dark font-semibold text-sm flex items-center gap-3">
-                        <i class="fa-regular fa-message"></i> ¿Qué comen los leones?
-                    </button>
-                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3">
-                        <i class="fa-regular fa-message"></i> Horarios del reptilario
-                    </button>
-                </div>
+            <div id="historial-sidebar" class="flex-1 overflow-y-auto p-4 space-y-2">
+                <div class="text-center text-slate-400 py-4 text-xs">Cargando historial...</div>
             </div>
             <div>
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ayer</h3>
@@ -164,7 +157,7 @@
 
             <div class="flex items-center gap-2 sm:gap-4 relative">
                 <!-- (13) Botón Chats / Cuidadores -->
-                <button onclick="abrirChatCuidador()" class="w-10 h-10 rounded-full hover:bg-blue-50 text-blue-500 flex items-center justify-center transition-colors relative" title="Mensajes Cuidadores">
+                <button onclick="abrirModalAlertas()" class="w-10 h-10 rounded-full hover:bg-blue-50 text-blue-500 flex items-center justify-center transition-colors relative" title="Mensajes Cuidadores">
                     <i class="fa-solid fa-comments text-xl"></i>
                     <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                 </button>
@@ -191,7 +184,7 @@
                             <button onclick="abrirModalPerfil()" class="w-full text-left block px-4 py-2 text-sm text-slate-700 hover:bg-zoo-light hover:text-zoo-dark"><i class="fa-regular fa-id-card w-5 text-center mr-2"></i> Información personal</button>
                             <button onclick="abrirModalTema()" class="w-full text-left block px-4 py-2 text-sm text-slate-700 hover:bg-zoo-light hover:text-zoo-dark"><i class="fa-solid fa-palette w-5 text-center mr-2"></i> Tema y Personalización</button>
                             <button onclick="abrirModalConfig()" class="w-full text-left block px-4 py-2 text-sm text-slate-700 hover:bg-zoo-light hover:text-zoo-dark"><i class="fa-solid fa-gear w-5 text-center mr-2"></i> Configuración</button>
-                            <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-zoo-light hover:text-zoo-dark"><i class="fa-regular fa-circle-question w-5 text-center mr-2"></i> Ayuda</a>
+                            <a href="foro_dudas.html" class="block px-4 py-2 text-sm text-slate-700 hover:bg-zoo-light hover:text-zoo-dark"><i class="fa-regular fa-circle-question w-5 text-center mr-2"></i> Ayuda</a>
                         </div>
                         <div class="border-t border-slate-100 py-1">
                             <button onclick="cerrarSesion()" class="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold transition-colors"><i class="fa-solid fa-arrow-right-from-bracket w-5 text-center mr-2"></i> Cerrar sesión</button>
@@ -202,21 +195,19 @@
         </header>
 
         <!-- ÁREA DE MENSAJES DEL CHAT -->
-        <div id="chat-container" class="flex-1 overflow-y-auto p-4 sm:p-6 pb-32">
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 pr-2">
             
-            <!-- Mensaje de bienvenida IA (11) -->
-            <div class="flex items-end gap-3 mb-6 animate-fade-in-up">
-                <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md">
+            <div class="flex items-start gap-4 mb-8 animate-fade-in-up w-full">
+                <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md mt-1">
                     <i class="fa-solid fa-hippo"></i>
                 </div>
-                <div class="bg-white border border-slate-200 p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%] sm:max-w-md text-slate-700 leading-relaxed relative">
-                    ¡Hola, Diego! 👋 Soy la Zoopedia IA. <br><br>
-                    ¡Perfecto! La inteligencia artificial tiene este espacio libre para brindar la respuesta. Puedes preguntarme cualquier cosa referente a las 15 especies de animales en el zoológico. En caso de no tener información, solo responderé: <i>"No tengo información sobre eso, ¡Pregúntame algo más!"</i>
-                    <span class="text-[10px] text-slate-400 absolute bottom-1 right-3">12:00</span>
+                <div class="flex-1 text-slate-700 leading-relaxed min-w-0">
+                    <p class="mb-2">¡Hola, Diego! 👋 Soy la Zoopedia IA.</p>
+                    <p>¡Perfecto! La inteligencia artificial tiene este espacio libre para brindar la respuesta. Puedes preguntarme cualquier cosa referente a las 15 especies de animales en el zoológico. En caso de no tener información, solo responderé: <i>"No tengo información sobre eso, ¡Pregúntame algo más!"</i></p>
+                    <div class="text-[10px] text-slate-400 mt-2 font-medium">12:00</div>
                 </div>
             </div>
 
-            <!-- (10) Ejemplo de Mensaje del Usuario -->
             <div class="flex items-end gap-3 mb-6 justify-end animate-fade-in-up" style="animation-delay: 0.1s;">
                 <div class="burbuja-usuario bg-zoo-dark text-white p-4 rounded-2xl rounded-br-none shadow-md max-w-[85%] sm:max-w-md leading-relaxed relative transition-colors duration-300">
                     ¿Cuál es el animal más rápido del zoológico y en qué zona está?
@@ -227,43 +218,42 @@
                 </div>
             </div>
 
-            <!-- Divisor de fecha -->
             <div class="flex justify-center my-6">
                 <span class="bg-slate-200 text-slate-500 text-xs font-bold px-3 py-1 rounded-full">Hoy</span>
             </div>
 
-        </div>
+        </div> <div id="zona-input" class="relative z-20 shrink-0 w-full bg-slate-50 pt-2 pb-4 px-4 sm:px-8 border-t border-slate-200">
+            
+            <div id="preview-container" class="hidden w-full max-w-4xl mx-auto mb-2 relative">
+                <div class="inline-block relative bg-white p-2 rounded-xl shadow-md border border-slate-200">
+                    <img id="preview-img" src="" class="h-20 w-20 object-cover rounded-lg">
+                    <button onclick="removerImagen()" class="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm" title="Quitar imagen">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                </div>
+            </div>
 
-        <!-- (7) ZONA DE INPUT DE CHAT -->
-        <div id="zona-input" class="absolute bottom-0 w-full bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-6 pb-4 px-4 sm:px-8"></div>
-            <div class="w-full max-w-4xl mx-auto relative bg-white rounded-3xl shadow-lg border border-slate-200 flex items-end p-2 transition-shadow focus-within:shadow-xl focus-within:border-zoo-light"></div>
-                
-                <!-- (8) Botón Adjuntar -->
-                <button class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-zoo hover:bg-zoo-light rounded-full transition-colors flex-shrink-0" title="Adjuntar imagen">
+            <div class="w-full max-w-4xl mx-auto relative bg-white rounded-3xl shadow-lg border border-slate-200 flex items-end p-2 transition-shadow focus-within:shadow-xl focus-within:border-zoo-light">
+            
+                <input type="file" id="input-imagen-chat" accept="image/*" class="hidden" onchange="mostrarPrevisualizacion(event)">
+
+                <button onclick="document.getElementById('input-imagen-chat').click()" class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-zoo hover:bg-zoo-light rounded-full transition-colors flex-shrink-0" title="Adjuntar imagen">
                     <i class="fa-solid fa-paperclip text-xl"></i>
                 </button>
 
-                <!-- Input Texto -->
-            <div id="zona-input" class="absolute bottom-0 w-full bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-6 pb-4 px-4 sm:px-8">
-                <div class="w-full max-w-4xl mx-auto relative bg-white rounded-3xl shadow-lg border border-slate-200 flex items-end p-2 transition-shadow focus-within:shadow-xl focus-within:border-zoo-light">
-                
-                    <button class="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-zoo hover:bg-zoo-light rounded-full transition-colors flex-shrink-0" title="Adjuntar imagen">
-                        <i class="fa-solid fa-paperclip text-xl"></i>
+                <textarea id="chat-input" rows="1" class="flex-1 max-h-32 min-h-[48px] bg-transparent resize-none outline-none px-2 py-3 text-slate-700 placeholder-slate-400 font-medium" placeholder="Pregunta a la Zoopedia..." oninput="autoResize(this)" onkeypress="handleEnter(event)"></textarea>
+
+                <div class="flex items-center gap-1 flex-shrink-0 pb-1 pr-1">
+                    <button id="btn-voz" onclick="iniciarReconocimientoVoz()" class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Mensaje de voz">
+                        <i id="icono-voz" class="fa-solid fa-microphone text-xl"></i>
                     </button>
-
-                    <textarea id="chat-input" rows="1" class="flex-1 max-h-32 min-h-[48px] bg-transparent resize-none outline-none px-2 py-3 text-slate-700 placeholder-slate-400 font-medium" placeholder="Pregunta a la Zoopedia..." oninput="autoResize(this)" onkeypress="handleEnter(event)"></textarea>
-
-                    <div class="flex items-center gap-1 flex-shrink-0 pb-1 pr-1">
-                        <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Mensaje de voz">
-                            <i class="fa-solid fa-microphone text-xl"></i>
-                        </button>
-                        <button onclick="enviarMensaje()" id="send-btn" class="w-10 h-10 flex items-center justify-center bg-zoo text-white rounded-full hover:bg-zoo-dark hover:scale-105 transition-all shadow-md disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed">
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
-                    </div>
+                    <button onclick="enviarMensaje()" id="send-btn" class="w-10 h-10 flex items-center justify-center bg-zoo text-white rounded-full hover:bg-zoo-dark hover:scale-105 transition-all shadow-md disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
                 </div>
-                <p class="text-center text-xs text-slate-400 mt-2">La IA puede cometer errores. Verifica la información importante.</p>
             </div>
+            <p class="text-center text-xs text-slate-400 mt-2">La IA puede cometer errores. Verifica la información importante.</p>
+        </div>
     </main>
 
     <!-- (12) MODAL DE ALERTA DE EMERGENCIA (PÁNICO) -->
@@ -353,15 +343,6 @@
                         </div>
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase">Contraseña</label>
-                    <div class="flex gap-2">
-                        <input type="password" value="********" class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-500 font-medium tracking-widest outline-none cursor-not-allowed" readonly>
-                        <button onclick="abrirModalPassword()" class="bg-zoo hover:bg-zoo-dark text-white px-4 rounded-lg font-bold transition-colors text-sm whitespace-nowrap shadow-sm">
-                            Cambiar
-                        </button>
-                    </div>
-                </div>
 
                 <button id="btn-guardar-perfil" onclick="guardarPerfil()" class="hidden w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-bold transition-colors shadow-md mt-4 justify-center items-center gap-2">
                     <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
@@ -370,7 +351,43 @@
         </div>
     </div>
 
-    <div id="custom-toast" class="fixed bottom-10 -left-[600px] bg-white px-6 py-4 rounded-2xl font-bold z-[100] flex items-center gap-3 transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] shadow-xl border-2">
+    <div id="modal-alertas" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl h-[80vh] rounded-3xl shadow-2xl overflow-hidden transform transition-all relative flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-headset text-blue-500 mr-2"></i> Mis Reportes</h2>
+                <button onclick="cerrarModalAlertas()" class="text-slate-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+
+            <div id="alertas-content" class="flex-1 flex flex-col overflow-hidden relative bg-slate-50">
+                
+                <div id="vista-lista-alertas" class="flex-1 overflow-y-auto p-4 space-y-3">
+                    </div>
+
+                <div id="vista-chat-alerta" class="hidden flex-1 flex flex-col h-full absolute inset-0 bg-white z-10">
+                    <div class="px-4 py-3 border-b border-slate-200 bg-blue-50 flex items-center gap-3 shadow-sm z-20">
+                        <button onclick="volverListaAlertas()" class="text-slate-500 hover:text-blue-600 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-blue-200">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <div class="flex-1 min-w-0">
+                            <h3 id="alerta-chat-titulo" class="font-bold text-sm text-slate-800 truncate">Reporte</h3>
+                            <p id="alerta-chat-estado" class="text-xs text-blue-600 font-semibold">Abierto</p>
+                        </div>
+                    </div>
+                    
+                    <div id="alerta-chat-mensajes" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                        </div>
+
+                    <div id="alerta-chat-input-zone" class="p-3 bg-white border-t border-slate-200 flex gap-2">
+                        </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-toast" class="fixed bottom-10 -right-[600px] bg-white px-6 py-4 rounded-2xl font-bold z-[100] flex items-center gap-3 transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] border border-slate-100">
         <div id="toast-icon" class="text-white rounded-full w-8 h-8 flex items-center justify-center font-black"></div>
         <span id="toast-message" class="text-slate-700"></span>
     </div>
@@ -400,6 +417,52 @@
                     <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div id="modal-pin" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative">
+            <button onclick="cerrarModalPin()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-solid fa-grip text-zoo"></i> Cambiar PIN</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase">PIN Actual</label>
+                    <input type="password" id="pin-antiguo" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '');" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-zoo outline-none transition-all" placeholder="****">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Nuevo PIN</label>
+                    <input type="password" id="pin-nuevo" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '');" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-zoo outline-none transition-all" placeholder="4 a 6 dígitos">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Confirmar Nuevo PIN</label>
+                    <input type="password" id="pin-confirmar" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '');" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-zoo outline-none transition-all" placeholder="4 a 6 dígitos">
+                </div>
+                
+                <button onclick="cambiarPin()" class="w-full bg-zoo hover:bg-zoo-dark text-white py-3 rounded-xl font-bold transition-colors shadow-md mt-2 flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Nuevo PIN
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-rostro" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative flex flex-col items-center">
+            <button onclick="cerrarModalRostro()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors z-10">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <h2 class="text-xl font-bold text-slate-800 mb-2"><i class="fa-solid fa-camera text-zoo"></i> Registrar Rostro</h2>
+            <p class="text-xs text-slate-500 mb-4 text-center">Mira a la cámara y asegúrate de tener buena iluminación. Sal solo tú en la foto.</p>
+            
+            <div class="relative w-56 h-56 rounded-full overflow-hidden border-4 border-zoo shadow-inner bg-slate-100 flex items-center justify-center mb-6">
+                <video id="video-rostro" class="w-full h-full object-cover" autoplay playsinline></video>
+                <canvas id="canvas-rostro" class="hidden"></canvas>
+            </div>
+
+            <button id="btn-capturar-rostro" onclick="capturarYRegistrarRostro()" class="w-full bg-zoo hover:bg-zoo-dark text-white py-3 rounded-xl font-bold transition-colors shadow-md flex justify-center items-center gap-2">
+                <i class="fa-solid fa-camera"></i> Tomar Foto y Guardar
+            </button>
         </div>
     </div>
 
@@ -489,7 +552,16 @@
                 <div>
                     <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-solid fa-comment-dots mr-1 text-zoo"></i> Estilo de Burbuja</h3>
                     <div class="flex flex-wrap gap-3">
-                        </div>
+                        <button onclick="cambiarColorBurbuja('bg-zoo-dark')" class="w-10 h-10 rounded-full bg-zoo-dark border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Verde Zoopedia"></button>
+                        
+                        <button onclick="cambiarColorBurbuja('bg-blue-500')" class="w-10 h-10 rounded-full bg-blue-500 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Azul"></button>
+                        
+                        <button onclick="cambiarColorBurbuja('bg-purple-500')" class="w-10 h-10 rounded-full bg-purple-500 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Morado"></button>
+                        
+                        <button onclick="cambiarColorBurbuja('bg-orange-500')" class="w-10 h-10 rounded-full bg-orange-500 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Naranja"></button>
+                        
+                        <button onclick="cambiarColorBurbuja('bg-slate-800')" class="w-10 h-10 rounded-full bg-slate-800 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Gris Oscuro"></button>
+                    </div>
                 </div>
 
             </div>
@@ -506,17 +578,43 @@
                         <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-solid fa-shield-halved mr-1 text-zoo"></i> Seguridad y acceso</h3>
                         <p class="text-xs text-slate-500 mb-3">Opciones de inicio de sesión en este dispositivo:</p>
                         <div class="space-y-2">
-                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 opacity-70 cursor-not-allowed">
-                                <div class="flex items-center gap-3"><i class="fa-solid fa-asterisk text-slate-400"></i><span class="text-sm font-bold text-slate-600">Contraseña</span></div>
-                                <span class="text-[10px] bg-slate-200 text-slate-500 px-2 py-1 rounded-full font-bold">Activo</span>
+                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-white hover:border-zoo transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid fa-asterisk text-zoo"></i>
+                                    <span class="text-sm font-bold text-slate-700">Contraseña</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold border border-green-200">Activo</span>
+                                    <button onclick="abrirModalPassword()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-zoo hover:text-white transition-colors flex items-center justify-center" title="Cambiar Contraseña">
+                                        <i class="fa-solid fa-pen text-xs"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 opacity-70 cursor-not-allowed">
-                                <div class="flex items-center gap-3"><i class="fa-solid fa-grip text-slate-400"></i><span class="text-sm font-bold text-slate-600">PIN</span></div>
-                                <span class="text-[10px] bg-slate-200 text-slate-500 px-2 py-1 rounded-full font-bold">Configurar</span>
+
+                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-white hover:border-zoo transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid fa-grip text-zoo"></i>
+                                    <span class="text-sm font-bold text-slate-700">PIN de Seguridad</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span id="badge-pin" class="text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded-full font-bold border border-red-200">Desactivado</span>
+                                    <button onclick="abrirModalPin()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-zoo hover:text-white transition-colors flex items-center justify-center" title="Cambiar PIN">
+                                        <i class="fa-solid fa-pen text-xs"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 opacity-70 cursor-not-allowed">
-                                <div class="flex items-center gap-3"><i class="fa-solid fa-face-smile text-slate-400"></i><span class="text-sm font-bold text-slate-600">Reconocimiento de rostro</span></div>
-                                <span class="text-[10px] bg-slate-200 text-slate-500 px-2 py-1 rounded-full font-bold">Configurar</span>
+
+                            <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-white hover:border-zoo transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid fa-face-smile text-zoo"></i>
+                                    <span class="text-sm font-bold text-slate-700">Reconocimiento de rostro</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span id="badge-rostro" class="text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded-full font-bold border border-red-200">Desactivado</span>
+                                    <button onclick="abrirModalRostro()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-zoo hover:text-white transition-colors flex items-center justify-center" title="Configurar Rostro">
+                                        <i class="fa-solid fa-camera text-xs"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -571,7 +669,6 @@
         const token = localStorage.getItem('access_token');
         const usuarioStr = localStorage.getItem('usuario');
         let modoEmergencia = false;
-        let intervaloVisitante = null;
         
         if (!token || !usuarioStr) {
             alert("Sesión expirada. Por favor, inicia sesión de nuevo.");
@@ -590,74 +687,218 @@
         const profileMenu = document.getElementById('profile-menu');
         const profileBtn = document.getElementById('profile-btn');
         let isProfileMenuOpen = false;
-        
-        async function abrirChatCuidador() {
-            try {
-                // 1. Buscamos todas las conversaciones del visitante
-                const res = await fetch(`${API_URL}/chat/conversaciones/${usuarioActual.id}`);
-                const data = await res.json();
-                
-                // 2. Filtramos la última que sea URGENTE y que NO esté resuelta
-                const alertaActiva = data.conversaciones.find(chat => 
-                    chat[1].startsWith("🚨 URGENTE") && !chat[1].startsWith("[RESUELTO]")
-                );
 
-                if (alertaActiva) {
-                    currentChatId = alertaActiva[0];
-                    modoEmergencia = true; // ACTIVAMOS MODO DIRECTO
-                    
-                    chatContainer.innerHTML = `
-                        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-xl">
-                            <p class="text-red-700 font-bold"><i class="fa-solid fa-headset mr-2"></i> Estás en la línea directa con el Cuidador.</p>
-                            <p class="text-xs text-red-500 mt-1">El asistente IA está desactivado temporalmente.</p>
-                        </div>
-                    `;
-                    
-                    // Iniciar Polling para recibir respuestas
-                    if(intervaloVisitante) clearInterval(intervaloVisitante);
-                    intervaloVisitante = setInterval(cargarMensajesEnVivoVisitante, 3000);
-                    cargarMensajesEnVivoVisitante(); // Carga inicial
-                    
-                    if(window.innerWidth < 768) toggleSidebar();
-                } else {
-                    alert("No tienes ninguna alerta de emergencia activa en este momento.");
-                }
-            } catch(e) { console.error(e); }
+        // --- LÓGICA DE BANDEJA DE REPORTES (ALERTAS) ---
+        let alertaInterval = null;
+        let chatAlertaActualId = null;
+
+        function abrirModalAlertas() {
+            const modal = document.getElementById('modal-alertas');
+            modal.classList.remove('hidden');
+            volverListaAlertas(); 
+            cargarListaAlertas();
         }
 
-        async function cargarMensajesEnVivoVisitante() {
-            if(!modoEmergencia || !currentChatId) return;
+        function cerrarModalAlertas() {
+            document.getElementById('modal-alertas').classList.add('hidden');
+            if(alertaInterval) clearInterval(alertaInterval);
+        }
+
+        function volverListaAlertas() {
+            document.getElementById('vista-lista-alertas').classList.remove('hidden');
+            document.getElementById('vista-chat-alerta').classList.add('hidden');
+            chatAlertaActualId = null;
+            if(alertaInterval) clearInterval(alertaInterval);
+        }
+
+        async function cargarListaAlertas() {
+            const contenedorLista = document.getElementById('vista-lista-alertas');
+            contenedorLista.innerHTML = '<div class="text-center text-slate-400 py-10"><i class="fa-solid fa-spinner fa-spin text-3xl mb-2"></i><p>Cargando reportes...</p></div>';
+
             try {
-                const response = await fetch(`${API_URL}/chat/conversacion/${currentChatId}`);
+                // Ahora llamamos a la ruta específica de alertas
+                const res = await fetch(`${API_URL}/chat/historial_alertas/${usuarioActual.id}`);
+                const data = await res.json();
+                const alertas = data.alertas;
+
+                if (!alertas || alertas.length === 0) {
+                    contenedorLista.innerHTML = `
+                        <div class="text-center text-slate-400 py-10 flex flex-col items-center">
+                            <div class="w-16 h-16 bg-white shadow-sm rounded-full flex items-center justify-center mb-4 text-2xl text-slate-300">
+                                <i class="fa-solid fa-folder-open"></i>
+                            </div>
+                            <p class="font-bold text-slate-600">No tienes reportes activos</p>
+                            <p class="text-xs mt-1 max-w-xs mx-auto">La única forma de contactar a un cuidador es levantando un reporte. Utiliza el botón de "Alerta" (rojo) si necesitas ayuda en el zoológico.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                contenedorLista.innerHTML = '';
+                alertas.forEach(alerta => {
+                    // Ahora usamos formato de objeto (alerta.id) gracias al nuevo backend
+                    const id = alerta.id;
+                    const titulo = alerta.titulo;
+                    const estaResuelto = (alerta.estado === 'resuelto'); // Comprobamos el estado real
+                    
+                    const icono = estaResuelto ? '<i class="fa-solid fa-check-circle text-green-500 text-xl"></i>' : '<i class="fa-solid fa-triangle-exclamation text-red-500 text-xl animate-pulse"></i>';
+                    const bgClass = estaResuelto ? 'bg-white hover:bg-slate-100 border-slate-200' : 'bg-red-50 hover:bg-red-100 border-red-200';
+                    const badge = estaResuelto 
+                        ? '<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Resuelto</span>' 
+                        : '<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">Abierto</span>';
+
+                    contenedorLista.innerHTML += `
+                        <button onclick="abrirChatAlerta(${id}, '${titulo.replace(/'/g, "\\'")}', ${estaResuelto})" class="w-full text-left p-4 rounded-xl border ${bgClass} transition-colors flex items-center gap-4 shadow-sm">
+                            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
+                                ${icono}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-slate-700 truncate text-sm">${titulo}</h4>
+                                <div class="mt-1">${badge}</div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+                        </button>
+                    `;
+                });
+
+            } catch(e) { 
+                contenedorLista.innerHTML = '<p class="text-center text-red-500 py-10">Error al cargar reportes.</p>';
+            }
+        }
+
+        async function abrirChatAlerta(chat_id, titulo, estaResuelto) {
+            chatAlertaActualId = chat_id;
+            
+            document.getElementById('vista-lista-alertas').classList.add('hidden');
+            document.getElementById('vista-chat-alerta').classList.remove('hidden');
+            
+            document.getElementById('alerta-chat-titulo').textContent = titulo;
+            const estadoEl = document.getElementById('alerta-chat-estado');
+            const inputZone = document.getElementById('alerta-chat-input-zone');
+            
+            // LA MAGIA: Si está resuelto, quitamos el input y ponemos un mensaje de bloqueo
+            if (estaResuelto) {
+                estadoEl.textContent = "Reporte Cerrado";
+                estadoEl.className = "text-xs text-green-600 font-semibold";
+                inputZone.innerHTML = '<div class="w-full text-center p-3 text-xs text-slate-500 font-bold bg-slate-100 rounded-xl border border-slate-200"><i class="fa-solid fa-lock mr-1"></i> Este reporte ha sido marcado como resuelto por el cuidador. El chat está cerrado.</div>';
+            } else {
+                estadoEl.textContent = "Reporte Abierto - Personal conectado";
+                estadoEl.className = "text-xs text-red-600 font-semibold animate-pulse";
+                inputZone.innerHTML = `
+                    <input type="text" id="input-mensaje-alerta" class="flex-1 border border-slate-300 rounded-full px-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" placeholder="Escribe un mensaje al cuidador..." onkeypress="if(event.key === 'Enter') enviarMensajeAlerta()">
+                    <button onclick="enviarMensajeAlerta()" class="bg-blue-500 hover:bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-sm">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                `;
+            }
+
+            cargarMensajesAlerta(chat_id);
+            if(alertaInterval) clearInterval(alertaInterval);
+            alertaInterval = setInterval(() => cargarMensajesAlerta(chat_id, true), 3000);
+        }
+
+        async function abrirChatAlerta(chat_id, titulo) {
+            chatAlertaActualId = chat_id;
+            const estaResuelto = titulo.startsWith("[RESUELTO]");
+            
+            document.getElementById('vista-lista-alertas').classList.add('hidden');
+            document.getElementById('vista-chat-alerta').classList.remove('hidden');
+            
+            document.getElementById('alerta-chat-titulo').textContent = titulo;
+            const estadoEl = document.getElementById('alerta-chat-estado');
+            const inputZone = document.getElementById('alerta-chat-input-zone');
+            
+            // LA MAGIA: Si está resuelto, quitamos el input y ponemos un mensaje de bloqueo
+            if (estaResuelto) {
+                estadoEl.textContent = "Reporte Cerrado";
+                estadoEl.className = "text-xs text-green-600 font-semibold";
+                inputZone.innerHTML = '<div class="w-full text-center p-3 text-xs text-slate-500 font-bold bg-slate-100 rounded-xl border border-slate-200"><i class="fa-solid fa-lock mr-1"></i> Este reporte ha sido marcado como resuelto por el cuidador. El chat está cerrado.</div>';
+            } else {
+                estadoEl.textContent = "Reporte Abierto - Personal conectado";
+                estadoEl.className = "text-xs text-red-600 font-semibold animate-pulse";
+                inputZone.innerHTML = `
+                    <input type="text" id="input-mensaje-alerta" class="flex-1 border border-slate-300 rounded-full px-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" placeholder="Escribe un mensaje al cuidador..." onkeypress="if(event.key === 'Enter') enviarMensajeAlerta()">
+                    <button onclick="enviarMensajeAlerta()" class="bg-blue-500 hover:bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-sm">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                `;
+            }
+
+            cargarMensajesAlerta(chat_id);
+            if(alertaInterval) clearInterval(alertaInterval);
+            alertaInterval = setInterval(() => cargarMensajesAlerta(chat_id, true), 3000);
+        }
+
+        async function cargarMensajesAlerta(chat_id, esPolling = false) {
+            if(chatAlertaActualId !== chat_id) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/chat/conversacion/${chat_id}`);
                 const data = await response.json();
+                const contenedorMensajes = document.getElementById('alerta-chat-mensajes');
+
                 if (response.ok && data.mensajes) {
-                    const numActuales = chatContainer.querySelectorAll('.flex.items-end').length;
-                    if (data.mensajes.length > numActuales) {
-                        // Limpiamos y redibujamos
-                        chatContainer.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-xl"><p class="text-red-700 font-bold"><i class="fa-solid fa-headset mr-2"></i> Conectado con el Cuidador.</p></div>`;
+                    const numActuales = contenedorMensajes.querySelectorAll('.msg-row').length;
+                    
+                    if (data.mensajes.length > numActuales || !esPolling) {
+                        contenedorMensajes.innerHTML = ''; 
                         
                         data.mensajes.forEach(msg => {
                             if (msg.role === 'Usuario') {
-                                agregarMensajeUsuario(msg.content);
-                            } else {
-                                // Dibujar mensaje del cuidador
-                                const time = getCurrentTime();
-                                chatContainer.insertAdjacentHTML('beforeend', `
-                                    <div class="flex items-end gap-3 mb-6 animate-fade-in-up">
-                                        <div class="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0 shadow-md"><i class="fa-solid fa-user-shield"></i></div>
-                                        <div class="bg-white border border-red-200 p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%] sm:max-w-md text-slate-700">
-                                            <span class="text-xs font-bold text-red-600 block mb-1">Personal Zoopedia</span>
+                                contenedorMensajes.innerHTML += `
+                                    <div class="msg-row flex justify-end mb-4">
+                                        <div class="bg-blue-500 text-white px-4 py-2 text-sm rounded-2xl rounded-br-none max-w-[80%] shadow-md">
                                             ${msg.content}
-                                            <span class="text-[10px] text-slate-400 absolute bottom-1 right-3">${time}</span>
                                         </div>
                                     </div>
-                                `);
+                                `;
+                            } else {
+                                contenedorMensajes.innerHTML += `
+                                    <div class="msg-row flex items-end justify-start mb-4 gap-2">
+                                        <div class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center flex-shrink-0 shadow-md text-xs"><i class="fa-solid fa-user-shield"></i></div>
+                                        <div class="bg-white border border-slate-200 px-4 py-3 text-sm rounded-2xl rounded-bl-none max-w-[80%] shadow-sm text-slate-700">
+                                            <p class="text-[10px] font-bold text-red-600 mb-1">Cuidador Zoopedia</p>
+                                            ${msg.content}
+                                        </div>
+                                    </div>
+                                `;
                             }
                         });
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        contenedorMensajes.scrollTop = contenedorMensajes.scrollHeight;
                     }
                 }
             } catch(e) {}
+        }
+
+        async function enviarMensajeAlerta() {
+            const input = document.getElementById('input-mensaje-alerta');
+            if(!input) return; // Si el chat está bloqueado, el input no existe
+            
+            const texto = input.value.trim();
+            if(!texto || !chatAlertaActualId) return;
+
+            input.value = ''; 
+
+            const contenedorMensajes = document.getElementById('alerta-chat-mensajes');
+            contenedorMensajes.innerHTML += `
+                <div class="msg-row flex justify-end mb-4 opacity-50 transition-opacity">
+                    <div class="bg-blue-500 text-white px-4 py-2 text-sm rounded-2xl rounded-br-none max-w-[80%] shadow-md">
+                        ${texto}
+                    </div>
+                </div>
+            `;
+            contenedorMensajes.scrollTop = contenedorMensajes.scrollHeight;
+
+            try {
+                await fetch(`${API_URL}/chat/mensaje_directo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mensaje: texto, conversacion_id: chatAlertaActualId })
+                });
+                cargarMensajesAlerta(chatAlertaActualId); 
+            } catch (error) {
+                mostrarToastPersonalizado("Error de red al enviar el mensaje.", "error");
+            }
         }
 
         function toggleProfileMenu() {
@@ -679,19 +920,37 @@
             return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         }
 
-        function agregarMensajeUsuario(texto) {
+        // --- FUNCIÓN ACTUALIZADA: AGREGAR MENSAJE DE USUARIO ---
+        function agregarMensajeUsuario(texto, imagenBase64 = null) {
             const time = getCurrentTime();
             
-            // Lógica para el avatar: Si hay foto, la mostramos, sino, usamos las iniciales
             const avatarHtml = currentAvatar 
                 ? `<img src="${currentAvatar}" class="w-full h-full object-cover rounded-full" alt="Perfil">`
                 : usuarioActual.nombre.substring(0,2).toUpperCase();
 
+            // Image HTML - styled for outside the bubble
+            const imagenHtml = imagenBase64 
+                ? `<div class="mb-4 text-right">
+                       <img src="${imagenBase64}" class="inline-block w-48 h-48 object-cover rounded-xl border-4 border-white shadow-lg cursor-pointer transition-transform hover:scale-105" onclick="window.open('${imagenBase64}', '_blank')">
+                   </div>` 
+                : '';
+
+            const textoHtml = texto ? texto.replace(/\n/g, '<br>') : '';
+
+            // User message bubble content (just the text and time now)
+            const bubbleContent = `
+                <div class="${currentBubbleColor} burbuja-usuario text-white p-4 rounded-2xl rounded-br-none shadow-md max-w-[85%] sm:max-w-md leading-relaxed relative transition-colors duration-300">
+                    ${textoHtml}
+                    <span class="text-[10px] text-white absolute bottom-1 right-3 opacity-80">${time}</span>
+                </div>
+            `;
+
+            // Final HTML structure: flex container, with optional image, then the text bubble, then the avatar
             const msgHTML = `
                 <div class="flex items-end gap-3 mb-6 justify-end animate-fade-in-up">
-                    <div class="${currentBubbleColor} burbuja-usuario text-white p-4 rounded-2xl rounded-br-none shadow-md max-w-[85%] sm:max-w-md leading-relaxed relative transition-colors duration-300">
-                        ${texto.replace(/\n/g, '<br>')}
-                        <span class="text-[10px] text-white absolute bottom-1 right-3 opacity-80">${time}</span>
+                    <div class="flex flex-col items-end flex-grow max-w-[calc(100%-3rem)]">
+                        ${imagenHtml}
+                        ${bubbleContent}
                     </div>
                     <div class="avatar-usuario w-10 h-10 rounded-full bg-slate-200 text-slate-600 border border-slate-300 flex items-center justify-center flex-shrink-0 font-bold text-sm shadow-sm overflow-hidden">
                         ${avatarHtml}
@@ -701,15 +960,14 @@
             chatContainer.insertAdjacentHTML('beforeend', msgHTML);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-
         function agregarIndicadorEscribiendo() {
             const id = 'typing-' + Date.now();
             const msgHTML = `
-                <div id="${id}" class="flex items-end gap-3 mb-6 animate-fade-in-up">
-                    <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md">
+                <div id="${id}" class="flex items-start gap-4 mb-8 animate-fade-in-up w-full">
+                    <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md mt-1">
                         <i class="fa-solid fa-hippo"></i>
                     </div>
-                    <div class="bg-white border border-slate-200 py-4 px-5 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-1">
+                    <div class="flex-1 flex items-center h-10 gap-1">
                         <div class="w-2 h-2 bg-zoo-dark rounded-full typing-dot"></div>
                         <div class="w-2 h-2 bg-zoo-dark rounded-full typing-dot"></div>
                         <div class="w-2 h-2 bg-zoo-dark rounded-full typing-dot"></div>
@@ -724,19 +982,79 @@
         function agregarMensajeIA(texto, typingId = null) {
             if (typingId) document.getElementById(typingId).remove();
             const time = getCurrentTime();
+            
+            // Reemplazamos los saltos de línea por etiquetas <br> para que respete los párrafos
+            const textoFormateado = texto.replace(/\n/g, '<br>');
+
             const msgHTML = `
-                <div class="flex items-end gap-3 mb-6 animate-fade-in-up">
-                    <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md">
+                <div class="flex items-start gap-4 mb-8 animate-fade-in-up w-full">
+                    <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md mt-1">
                         <i class="fa-solid fa-hippo"></i>
                     </div>
-                    <div class="bg-white border border-slate-200 p-4 rounded-2xl rounded-bl-none shadow-sm max-w-[85%] sm:max-w-md text-slate-700 leading-relaxed relative">
-                        ${texto}
-                        <span class="text-[10px] text-slate-400 absolute bottom-1 right-3">${time}</span>
+                    <div class="flex-1 text-slate-700 leading-relaxed min-w-0">
+                        ${textoFormateado}
+                        <div class="text-[10px] text-slate-400 mt-2 font-medium">${time}</div>
                     </div>
                 </div>
             `;
             chatContainer.insertAdjacentHTML('beforeend', msgHTML);
             chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // --- LÓGICA DEL HISTORIAL LATERAL (SOLO IA) ---
+        async function cargarHistorialIA() {
+            const contenedor = document.getElementById('historial-sidebar');
+            try {
+                // Ahora llamamos a la ruta específica de IA
+                const res = await fetch(`${API_URL}/chat/historial_ia/${usuarioActual.id}`);
+                const data = await res.json();
+                const chatsIA = data.conversaciones;
+
+                contenedor.innerHTML = '';
+                
+                if (!chatsIA || chatsIA.length === 0) {
+                    contenedor.innerHTML = '<p class="text-xs text-slate-400 text-center mt-4">No hay conversaciones previas.</p>';
+                    return;
+                }
+
+                chatsIA.forEach(chat => {
+                    const id = chat.id;
+                    const titulo = chat.titulo;
+                    contenedor.innerHTML += `
+                        <button onclick="abrirChatHistorial(${id}, '${titulo.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3 truncate mb-1">
+                            <i class="fa-regular fa-message flex-shrink-0"></i> 
+                            <span class="truncate">${titulo}</span>
+                        </button>
+                    `;
+                });
+            } catch (error) {
+                contenedor.innerHTML = '<p class="text-xs text-red-400 text-center mt-4">Error al cargar historial.</p>';
+            }
+        }
+
+        async function abrirChatHistorial(chat_id, titulo) {
+            currentChatId = chat_id;
+            chatContainer.innerHTML = ''; // Limpiar chat actual
+            
+            try {
+                const response = await fetch(`${API_URL}/chat/conversacion/${chat_id}`);
+                const data = await response.json();
+                
+                if (response.ok && data.mensajes) {
+                    data.mensajes.forEach(msg => {
+                        if (msg.role === 'Usuario') {
+                            agregarMensajeUsuario(msg.content);
+                        } else {
+                            agregarMensajeIA(msg.content);
+                        }
+                    });
+                }
+            } catch(e) {
+                mostrarToastPersonalizado("Error al cargar la conversación", "error");
+            }
+            
+            // Cerrar menú lateral en móviles al elegir un chat
+            if(window.innerWidth < 768) toggleSidebar();
         }
 
         async function nuevoChat() {
@@ -750,72 +1068,111 @@
 
             chatContainer.innerHTML = '';
             agregarMensajeIA(`¡Hola, ${usuarioActual.nombre}! ¿En qué puedo ayudarte hoy?`);
+            cargarHistorialIA();
         }
 
+        // --- 10. LÓGICA DE PREVISUALIZACIÓN DE IMÁGENES ---
+        let imagenAdjuntaBase64 = null;
+
+        function mostrarPrevisualizacion(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Transformamos la imagen a Base64 para mandarla al backend
+                imagenAdjuntaBase64 = e.target.result;
+                document.getElementById('preview-img').src = imagenAdjuntaBase64;
+                document.getElementById('preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removerImagen() {
+            imagenAdjuntaBase64 = null;
+            document.getElementById('input-imagen-chat').value = '';
+            document.getElementById('preview-container').classList.add('hidden');
+        }
+
+        // --- REEMPLAZO ACTUALIZADO: ENVIAR MENSAJE ---
         async function enviarMensaje() {
             const texto = inputField.value.trim();
-            if(!texto) return;
+            
+            // Validamos que exista al menos texto o una imagen para poder enviar algo
+            if(!texto && !imagenAdjuntaBase64) return;
 
-            // 1. Si no hay un chat activo, lo creamos
             if (!currentChatId) {
                 try {
                     const res = await fetch(`${API_URL}/chat/nueva`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: usuarioActual.id, titulo: "Nueva consulta" })
+                        body: JSON.stringify({ user_id: usuarioActual.id, titulo: "Consulta con imagen" })
                     });
                     const data = await res.json();
-                    if (res.ok) {
-                        currentChatId = data.conversacion_id;
-                    } else return;
+                    if (res.ok) { currentChatId = data.conversacion_id; cargarHistorialIA();
+                    }
+                    else return;
                 } catch (e) {
                     console.error("Fallo de conexión al crear chat", e);
                     return;
                 }
             }
 
-            // 2. Limpiar input visualmente
+            // Resguardamos la imagen y limpiamos la UI
+            const imagenEnviada = imagenAdjuntaBase64;
+            removerImagen(); 
+
             inputField.value = '';
             inputField.style.height = 'auto';
             
-            // 3. Mostrar mensaje del usuario y la animación de puntitos
-            agregarMensajeUsuario(texto);
+            // Mostramos el mensaje en la pantalla del usuario (con o sin imagen)
+            agregarMensajeUsuario(texto, imagenEnviada);
             const typingId = agregarIndicadorEscribiendo();
 
-            // 4. EL SEMÁFORO: ¿A quién le enviamos el mensaje?
             try {
-                // Si estamos en la línea directa con el cuidador...
                 if (modoEmergencia) { 
                     await fetch(`${API_URL}/chat/mensaje_directo`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ mensaje: texto, conversacion_id: currentChatId })
+                        body: JSON.stringify({ mensaje: texto || "[Imagen enviada]", conversacion_id: currentChatId })
                     });
-                    // Como no responde la IA, borramos los puntitos de "escribiendo..." de inmediato
                     document.getElementById(typingId).remove(); 
                 } 
-                // Si es un chat normal...
                 else { 
-                    const response = await fetch(`${API_URL}/chat/mensaje`, {
+                    const bodyData = {
+                        pregunta: texto || "¿Qué puedes decirme sobre esta imagen?", 
+                        user_id: usuarioActual.id,
+                        conversacion_id: currentChatId,
+                        imagen_base64: imagenEnviada 
+                    };
+
+                    // Si hay imagen, mandamos a una ruta de IA multimodal
+                    const endpoint = imagenEnviada ? '/chat/mensaje_con_imagen' : '/chat/mensaje';
+
+                    const response = await fetch(`${API_URL}${endpoint}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            pregunta: texto,
-                            user_id: usuarioActual.id,
-                            conversacion_id: currentChatId
-                        })
+                        body: JSON.stringify(bodyData)
                     });
                     const data = await response.json();
-                    agregarMensajeIA(data.respuesta, typingId);
+                    
+                    // Si el backend dice que todo fue un éxito, imprimimos la respuesta
+                    if (data.success) {
+                        agregarMensajeIA(data.respuesta, typingId);
+                    } else {
+                        // Si hubo un error, imprimimos la advertencia real en lugar de "undefined"
+                        agregarMensajeIA("⚠️ Lo siento, tuve un problema al procesar la imagen: " + data.error, typingId);
+                    }
                 }
             } catch (error) {
-                agregarMensajeIA("Error de conexión con el servidor.", typingId);
+                agregarMensajeIA("Error de conexión con el servidor. Intenta nuevamente.", typingId);
             }
         }
 
         // --- 4. Inicialización ---
         window.onload = async () => {
             nuevoChat();
+            cargarHistorialIA();
             document.querySelector('#profile-menu p.font-bold').textContent = usuarioActual.nombre;
             document.getElementById('profile-email').textContent = usuarioActual.correo || usuarioActual.email || 'Correo no disponible';
             document.getElementById('profile-btn').textContent = usuarioActual.nombre.substring(0, 2).toUpperCase();
@@ -1067,11 +1424,26 @@
             document.getElementById('pass-antigua').value = '';
             document.getElementById('pass-nueva').value = '';
             document.getElementById('pass-confirmar').value = '';
+            
+            // Ocultar la ventana de configuración para que no se encimen
+            const modalConfig = document.getElementById('modal-configuracion');
+            if (modalConfig) {
+                modalConfig.classList.add('hidden');
+            }
+            
+            // Abrir el modal de la contraseña
             modalPassword.classList.remove('hidden');
         }
 
         function cerrarModalPassword() {
+            // Cerrar el modal de la contraseña
             modalPassword.classList.add('hidden');
+            
+            // Volver a mostrar la ventana de configuración que estaba debajo
+            const modalConfig = document.getElementById('modal-configuracion');
+            if (modalConfig) {
+                modalConfig.classList.remove('hidden');
+            }
         }
 
         // --- 7. LÓGICA DE TEMA Y PERSONALIZACIÓN ---
@@ -1247,42 +1619,43 @@
             const icono = document.getElementById('toast-icon');
             const texto = document.getElementById('toast-message');
 
-            // 1. Limpiar clases previas (Reseteo visual)
-            toast.className = "fixed bottom-10 -left-[600px] bg-white px-6 py-4 rounded-2xl font-bold z-[100] flex items-center gap-3 transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] shadow-xl border-2";
+            // 1. Limpiar clases previas (Reseteo visual para lado DERECHO)
+            toast.className = "fixed bottom-10 -right-[600px] bg-white px-6 py-4 rounded-2xl font-bold z-[100] flex items-center gap-3 transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] border border-slate-100";
             icono.className = "text-white rounded-full w-8 h-8 flex items-center justify-center font-black text-lg shadow-sm";
 
             // 2. Asignar el mensaje
             texto.textContent = mensaje;
 
-            // 3. Pintar los bordes e iconos según el tipo de mensaje
-            if (tipo === 'exito') { // Amarillo
-                toast.classList.add('border-yellow-400');
-                icono.classList.add('bg-yellow-400');
+            // 3. Pintar los bordes, iconos y el "resplandor difuminado" según el tipo
+            // Usamos shadow-[0_0_20px_rgba(...)] para crear el efecto de luz difuminada
+            if (tipo === 'exito') { // Verde
+                toast.classList.add('shadow-[0_0_20px_rgba(76,175,80,0.4)]');
+                icono.classList.add('bg-green-500');
                 icono.textContent = '✓';
-                texto.className = 'text-yellow-700 font-bold';
+                texto.className = 'text-green-700 font-bold';
             } else if (tipo === 'error') { // Rojo
-                toast.classList.add('border-red-500');
+                toast.classList.add('shadow-[0_0_20px_rgba(239,68,68,0.4)]');
                 icono.classList.add('bg-red-500');
                 icono.textContent = 'X';
                 texto.className = 'text-red-700 font-bold';
-            } else if (tipo === 'alerta') { // Azul
-                toast.classList.add('border-blue-500');
+            } else if (tipo === 'alerta') { // Azul (Para mensajes informativos)
+                toast.classList.add('shadow-[0_0_20px_rgba(59,130,246,0.4)]');
                 icono.classList.add('bg-blue-500');
                 icono.textContent = '!';
                 texto.className = 'text-blue-700 font-bold';
             }
 
-            // 4. Disparar animación de entrada (de izquierda a derecha)
+            // 4. Disparar animación de entrada (de derecha a izquierda)
             setTimeout(() => {
-                toast.classList.remove('-left-[600px]');
-                toast.classList.add('left-5', 'sm:left-10');
+                toast.classList.remove('-right-[600px]');
+                toast.classList.add('right-5', 'sm:right-10');
             }, 10);
 
             // 5. Ocultar después de 4 segundos
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => {
-                toast.classList.remove('left-5', 'sm:left-10');
-                toast.classList.add('-left-[600px]');
+                toast.classList.remove('right-5', 'sm:right-10');
+                toast.classList.add('-right-[600px]');
             }, 4000);
         }
 
@@ -1329,6 +1702,162 @@
             }
         }
 
+        // --- LÓGICA DE CAMBIO DE PIN ---
+        const modalPin = document.getElementById('modal-pin');
+
+        function abrirModalPin() {
+            // Limpiamos los campos
+            document.getElementById('pin-antiguo').value = '';
+            document.getElementById('pin-nuevo').value = '';
+            document.getElementById('pin-confirmar').value = '';
+            
+            // Opcional: Cerrar el modal de config temporalmente para no encimarlos
+            modalConfig.classList.add('hidden'); 
+            modalPin.classList.remove('hidden');
+        }
+
+        function cerrarModalPin() {
+            modalPin.classList.add('hidden');
+            // Restaurar modal de config
+            modalConfig.classList.remove('hidden'); 
+        }
+
+        async function cambiarPin() {
+            const antiguo = document.getElementById('pin-antiguo').value;
+            const nuevo = document.getElementById('pin-nuevo').value;
+            const confirmar = document.getElementById('pin-confirmar').value;
+
+            if(!antiguo || !nuevo || !confirmar) {
+                mostrarToastPersonalizado("Por favor, llena todos los campos.", "error");
+                return;
+            }
+
+            if(nuevo.length < 4) {
+                mostrarToastPersonalizado("El PIN debe tener al menos 4 dígitos.", "alerta");
+                return;
+            }
+
+            if(nuevo !== confirmar) {
+                mostrarToastPersonalizado("Los PIN nuevos no coinciden.", "alerta");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/usuario/cambiar_pin`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: usuarioActual.id,
+                        pin_antiguo: antiguo,
+                        pin_nuevo: nuevo
+                    })
+                });
+
+                const data = await response.json();
+                
+                if(response.ok) {
+                    mostrarToastPersonalizado("¡PIN actualizado con éxito!", "exito");
+                    actualizarBadge('badge-pin', true);
+
+                    setTimeout(() => { cerrarModalPin(); }, 1500);
+                } else {
+                    mostrarToastPersonalizado(data.detail || "Error al cambiar el PIN.", "error");
+                }
+            } catch(e) {
+                mostrarToastPersonalizado("Error de conexión al servidor.", "error");
+            }
+        }
+
+        // --- LÓGICA DE RECONOCIMIENTO FACIAL (REGISTRO) ---
+        let streamRostro = null;
+
+        function abrirModalRostro() {
+            const modalConfig = document.getElementById('modal-configuracion');
+            if (modalConfig) modalConfig.classList.add('hidden');
+            
+            document.getElementById('modal-rostro').classList.remove('hidden');
+            iniciarCamara();
+        }
+
+        function cerrarModalRostro() {
+            document.getElementById('modal-rostro').classList.add('hidden');
+            detenerCamara();
+            
+            const modalConfig = document.getElementById('modal-configuracion');
+            if (modalConfig) modalConfig.classList.remove('hidden');
+        }
+
+        async function iniciarCamara() {
+            const video = document.getElementById('video-rostro');
+            try {
+                // Pedimos permiso al navegador para usar la webcam
+                streamRostro = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = streamRostro;
+            } catch (err) {
+                console.error("Error al acceder a la cámara: ", err);
+                mostrarToastPersonalizado("No se pudo acceder a la cámara. Verifica los permisos de tu navegador.", "error");
+            }
+        }
+
+        function detenerCamara() {
+            // Apaga el foquito de la cámara cuando cerramos el modal
+            if (streamRostro) {
+                const tracks = streamRostro.getTracks();
+                tracks.forEach(track => track.stop());
+                streamRostro = null;
+            }
+        }
+
+        async function capturarYRegistrarRostro() {
+            const video = document.getElementById('video-rostro');
+            const canvas = document.getElementById('canvas-rostro');
+            const btnCapturar = document.getElementById('btn-capturar-rostro');
+            
+            // 1. Configurar el canvas al mismo tamaño del video real
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // 2. Dibujar el frame congelado del video en el canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 3. Obtener la imagen en texto (Base64 JPEG)
+            const imagenBase64 = canvas.toDataURL('image/jpeg');
+            
+            // Feedback visual mientras la IA procesa
+            btnCapturar.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Analizando rostro...`;
+            btnCapturar.disabled = true;
+
+            try {
+                // 4. Enviar a FastAPI
+                const response = await fetch(`${API_URL}/usuario/registrar_rostro`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: usuarioActual.id,
+                        imagen_base64: imagenBase64
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    mostrarToastPersonalizado(data.mensaje, "exito");
+                    actualizarBadge('badge-rostro', true);
+                    
+                    setTimeout(() => { cerrarModalRostro(); }, 2000);
+                } else {
+                    // Mostrará el error de la IA (Ej. "No se detectó un rostro" o "Hay más de una persona")
+                    mostrarToastPersonalizado(data.detail || "Error al registrar rostro.", "error");
+                }
+            } catch (error) {
+                mostrarToastPersonalizado("Error de conexión al servidor.", "error");
+            } finally {
+                btnCapturar.innerHTML = `<i class="fa-solid fa-camera"></i> Tomar Foto y Guardar`;
+                btnCapturar.disabled = false;
+            }
+        }
+
         function cerrarSesion() {
             // 1. Eliminamos los datos de autenticación del navegador
             localStorage.removeItem('access_token');
@@ -1346,13 +1875,39 @@
         const formEliminar = document.getElementById('form-eliminar-cuenta');
         const btnMostrarEliminar = document.getElementById('btn-mostrar-eliminar');
 
-        function abrirModalConfig() {
+        function actualizarBadge(elementId, estaActivo) {
+            const badge = document.getElementById(elementId);
+            if (!badge) return;
+            
+            if (estaActivo) {
+                badge.textContent = "Activo";
+                badge.className = "text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold border border-green-200";
+            } else {
+                badge.textContent = "Desactivado";
+                badge.className = "text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded-full font-bold border border-red-200";
+            }
+        }
+
+        async function abrirModalConfig() {
             if(isProfileMenuOpen) toggleProfileMenu();
-            // Resetear visualmente por si el usuario lo abrió antes y lo cerró a la mitad
+            // Resetear visualmente por si el usuario lo abrió antes
             formEliminar.classList.add('hidden');
             btnMostrarEliminar.classList.remove('hidden');
             document.getElementById('motivo-eliminar').value = '';
             document.getElementById('pass-eliminar').value = '';
+            
+            // --- NUEVO: Consultar estado de seguridad a la base de datos ---
+            try {
+                const response = await fetch(`${API_URL}/usuario/perfil/${usuarioActual.id}`);
+                const data = await response.json();
+                
+                if (response.ok && data.perfil) {
+                    actualizarBadge('badge-pin', data.perfil.tiene_pin);
+                    actualizarBadge('badge-rostro', data.perfil.tiene_rostro);
+                }
+            } catch (error) {
+                console.error("Error al obtener estado de seguridad:", error);
+            }
             
             modalConfig.classList.remove('hidden');
         }
@@ -1399,6 +1954,102 @@
             } catch (e) {
                 mostrarToastPersonalizado("Error de conexión al servidor.", "error");
             }
+        }
+
+       // --- 9. LÓGICA DE RECONOCIMIENTO DE VOZ (DICTADO AUTOMÁTICO) ---
+        let reconociendoVoz = false;
+        let recognition;
+        let textoPrevioDictado = "";
+        let seDetectoVoz = false; // Nueva variable para saber si el usuario habló
+
+        // Comprobamos si el navegador soporta la API de reconocimiento de voz
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            // Configuraciones de la IA de voz
+            recognition.continuous = false; // Se detiene automáticamente con el silencio
+            recognition.interimResults = true; // Muestra transcripción en tiempo real
+            recognition.lang = 'es-ES'; // Configurado en español
+
+            recognition.onstart = function() {
+                reconociendoVoz = true;
+                seDetectoVoz = false; // Reiniciamos el detector de voz
+                textoPrevioDictado = inputField.value; // Guardamos texto previo
+                
+                // Cambios visuales
+                const btnVoz = document.getElementById('btn-voz');
+                const iconoVoz = document.getElementById('icono-voz');
+                
+                btnVoz.classList.remove('text-slate-400');
+                btnVoz.classList.add('text-red-500', 'bg-red-100', 'animate-pulse');
+                iconoVoz.classList.remove('fa-microphone');
+                iconoVoz.classList.add('fa-microphone-lines');
+                
+                inputField.placeholder = "Escuchando tu pregunta...";
+            };
+
+            recognition.onresult = function(event) {
+                let transcripcion = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcripcion += event.results[i][0].transcript;
+                }
+                
+                // Colocamos el texto en el input
+                inputField.value = (textoPrevioDictado + " " + transcripcion).trim();
+                autoResize(inputField); 
+                
+                seDetectoVoz = true; // Confirmamos que el micrófono logró captar palabras
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Error en reconocimiento de voz: ", event.error);
+                restaurarBotonVoz();
+                
+                if (event.error === 'not-allowed') {
+                    mostrarToastPersonalizado("Permiso de micrófono denegado.", "error");
+                } else if (event.error !== 'no-speech') {
+                    // Evitamos mostrar error si simplemente no habló (no-speech)
+                    mostrarToastPersonalizado("No se pudo escuchar claramente. Intenta de nuevo.", "alerta");
+                }
+            };
+
+            recognition.onend = function() {
+                // Cuando el micrófono se apaga (ya sea por silencio o manualmente)
+                reconociendoVoz = false;
+                restaurarBotonVoz();
+                
+                // ENVÍO AUTOMÁTICO: Si captamos voz y el campo no está vacío, lo enviamos.
+                if (seDetectoVoz && inputField.value.trim() !== "") {
+                    enviarMensaje();
+                }
+            };
+        }
+
+        function iniciarReconocimientoVoz() {
+            if (!recognition) {
+                mostrarToastPersonalizado("Tu navegador actual no soporta el dictado por voz.", "error");
+                return;
+            }
+
+            if (reconociendoVoz) {
+                recognition.stop(); 
+            } else {
+                recognition.start(); 
+            }
+        }
+
+        function restaurarBotonVoz() {
+            const btnVoz = document.getElementById('btn-voz');
+            const iconoVoz = document.getElementById('icono-voz');
+            
+            if (btnVoz && iconoVoz) {
+                btnVoz.classList.remove('text-red-500', 'bg-red-100', 'animate-pulse');
+                btnVoz.classList.add('text-slate-400');
+                iconoVoz.classList.remove('fa-microphone-lines');
+                iconoVoz.classList.add('fa-microphone');
+            }
+            inputField.placeholder = "Pregunta a la Zoopedia...";
         }
     </script>
 </body>

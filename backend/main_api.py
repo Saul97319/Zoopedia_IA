@@ -11,6 +11,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from utils import db_manager
 from utils.motor_ia import MotorIA_RAG
+import face_recognition
+import numpy as np
+import base64
+import cv2
+import json
+import google.generativeai as genai
+import io
+from PIL import Image
 
 # 1. Inicializar la app FastAPI
 app = FastAPI(title="Zoopedia API")
@@ -41,6 +49,10 @@ SECRET_KEY = "sPgXuDqxrp74zick9H8DXDnmjTQlmMSOeBIETFh2t0Q"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
+# --- CONFIGURACIÓN DE GEMINI ---
+GOOGLE_API_KEY = "AIzaSyDYliFFoBVWPsk-k4caq5QsQNm38xHdSWs" # Pon tu clave aquí
+genai.configure(api_key=GOOGLE_API_KEY)
+
 def crear_token_acceso(data: dict):
     """Genera un JWT firmado con nuestra clave secreta"""
     to_encode = data.copy()
@@ -62,6 +74,11 @@ class RegistroRequest(BaseModel):
     fecha_nac: str = None
     genero: str = None
     rol: str = "Visitante"  # <- Nuevo campo
+    pin: str = None # <- Nuevo campo agregado
+
+class LoginPinRequest(BaseModel):
+    email: str
+    pin: str
 
 class NuevaConversacionRequest(BaseModel):
     user_id: int
@@ -80,6 +97,64 @@ class AlertaRequest(BaseModel):
 class MensajeCuidadorRequest(BaseModel):
     conversacion_id: int
     mensaje: str
+
+class RostroRegistroRequest(BaseModel):
+    user_id: int
+    imagen_base64: str
+
+class RostroLoginRequest(BaseModel):
+    email: str
+    imagen_base64: str
+
+# 1. Agrega esto junto a tus otras clases "class Request(...):"
+class MensajeImagenRequest(BaseModel):
+    pregunta: str
+    user_id: int
+    conversacion_id: int
+    imagen_base64: str
+
+
+# 2. Agrega este nuevo endpoint debajo de @app.post("/chat/mensaje")
+@app.post("/chat/mensaje_con_imagen")
+async def procesar_mensaje_con_imagen(req: MensajeImagenRequest):
+    if not GOOGLE_API_KEY:
+        return {"success": False, "error": "Falta la API Key de Google Gemini."}
+
+    try:
+        # 1. Guardar el mensaje de texto del usuario en la BD
+        mensaje_id = db_manager.guardar_mensaje(req.conversacion_id, "Usuario", req.pregunta)
+        
+        # 2. Guardar la imagen en la base de datos vinculada a ese mensaje
+        db_manager.guardar_imagen_chat(mensaje_id, req.imagen_base64)
+        
+        # 3. Separar y decodificar la imagen Base64 de forma segura
+        data_url_parts = req.imagen_base64.split(';base64,')
+        if len(data_url_parts) != 2:
+            raise ValueError("Formato de imagen corrupto o inválido.")
+        
+        image_bytes = base64.b64decode(data_url_parts[1])
+
+        # 4. Magia: Convertimos los bytes en una imagen real de Pillow (PIL)
+        img_pil = Image.open(io.BytesIO(image_bytes))
+
+        # 5. Llamamos al modelo visual de Gemini
+        model = genai.GenerativeModel('gemma-3-27b-it')
+        
+        # Si el usuario mandó la imagen sin texto, le damos una instrucción por defecto
+        prompt = req.pregunta if req.pregunta else "Analiza esta imagen y describe qué animal u objeto es detalladamente."
+
+        # Le pasamos la imagen de Pillow directamente (es el método infalible)
+        response = model.generate_content([prompt, img_pil])
+        respuesta_ia = response.text
+        
+        # 6. Guardar la respuesta de la IA y enviarla al frontend
+        db_manager.guardar_mensaje(req.conversacion_id, "Zoopedia", respuesta_ia)
+        
+        return {"success": True, "respuesta": respuesta_ia}
+        
+    except Exception as e:
+        # Si algo falla, atrapamos el error y lo enviamos textualmente
+        return {"success": False, "error": f"Error del servidor visual: {str(e)}"}
 
 # --- RUTAS DE AUTENTICACIÓN ---
 @app.post("/auth/login")
@@ -106,11 +181,127 @@ def login_endpoint(req: LoginRequest):
 def registrar_endpoint(req: RegistroRequest):
     exito = db_manager.registrar_usuario(
         req.nombre, req.email, req.password, 
-        req.telefono, req.fecha_nac, req.genero, req.rol
+        req.telefono, req.fecha_nac, req.genero, req.rol, req.pin # <- Pasamos el PIN aquí
     )
     if not exito:
-        raise HTTPException(status_code=400, detail="El correo ya está registrado o es inálido. ")
+        raise HTTPException(status_code=400, detail="El correo ya está registrado o es inválido.")
     return {"success": True, "mensaje": "Usuario creado correctamente"}
+
+@app.post("/auth/login_pin")
+def login_pin_endpoint(req: LoginPinRequest):
+    usuario = db_manager.login_pin(req.email, req.pin)
+    
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Correo o PIN incorrectos")
+        
+    user_id, nombre, rol = usuario[0], usuario[1], usuario[2]
+
+    token_data = {"sub": str(user_id), "rol": rol}
+    token = crear_token_acceso(token_data)
+    
+    return {
+        "success": True, 
+        "access_token": token,
+        "usuario": {"id": user_id, "nombre": nombre, "rol": rol, "email": req.email}
+    }
+
+def procesar_imagen_base64(base64_string):
+    """Convierte un texto Base64 (de la web) a una imagen que OpenCV entienda"""
+    if "," in base64_string:
+        base64_string = base64_string.split(",")[1]
+    img_data = base64.b64decode(base64_string)
+    nparr = np.frombuffer(img_data, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    # Convertimos colores de BGR (OpenCV) a RGB (Face Recognition)
+    return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+@app.post("/usuario/registrar_rostro")
+def registrar_rostro_endpoint(req: RostroRegistroRequest):
+    img_rgb = procesar_imagen_base64(req.imagen_base64)
+    
+    # 1. Buscar rostros en la imagen
+    encodings = face_recognition.face_encodings(img_rgb)
+    
+    if len(encodings) == 0:
+        raise HTTPException(status_code=400, detail="No se detectó ningún rostro. Asegúrate de tener buena iluminación.")
+    if len(encodings) > 1:
+        raise HTTPException(status_code=400, detail="Se detectó más de un rostro. Por favor, sal solo tú en la foto.")
+        
+    # 2. Convertir el arreglo matemático de Numpy a una lista normal de Python y guardarla
+    mapa_facial = encodings[0].tolist()
+    exito = db_manager.guardar_rostro(req.user_id, mapa_facial)
+    
+    if not exito:
+        raise HTTPException(status_code=500, detail="Error al guardar el rostro en la base de datos.")
+        
+    return {"success": True, "mensaje": "¡Rostro registrado con éxito!"}
+
+@app.post("/auth/login_rostro")
+def login_rostro_endpoint(req: RostroLoginRequest):
+    # 1. Buscar si el usuario existe y si tiene un rostro registrado
+    usuario = db_manager.obtener_datos_rostro(req.email)
+    
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        
+    user_id, nombre, rol, rostro_encoding_str = usuario
+    
+    if not rostro_encoding_str:
+        raise HTTPException(status_code=400, detail="No tienes un rostro configurado. Inicia sesión con contraseña o PIN para configurarlo.")
+        
+    # 2. Cargar el mapa matemático guardado en la BD
+    rostro_guardado = np.array(json.loads(rostro_encoding_str))
+    
+    # 3. Procesar la foto que acaba de tomarse en el Login
+    img_rgb = procesar_imagen_base64(req.imagen_base64)
+    encodings_capturados = face_recognition.face_encodings(img_rgb)
+    
+    if len(encodings_capturados) == 0:
+        raise HTTPException(status_code=400, detail="No se detectó un rostro en la cámara.")
+        
+    rostro_capturado = encodings_capturados[0]
+
+    # 4. LA MAGIA: Comparar los dos rostros (tolerancia de 0.5)
+    coincidencias = face_recognition.compare_faces([rostro_guardado], rostro_capturado, tolerance=0.5)
+        
+    if coincidencias[0]:
+        # ¡Son la misma persona! Generamos el token de acceso
+        token_data = {"sub": str(user_id), "rol": rol}
+        token = crear_token_acceso(token_data)
+            
+        # ¡AQUÍ ESTÁ LA CLAVE! Asegúrate de tener la palabra 'return' aquí:
+        return {
+            "success": True, 
+            "access_token": token,
+            "usuario": {"id": user_id, "nombre": nombre, "rol": rol, "email": req.email}
+        }
+    else:
+        raise HTTPException(status_code=401, detail="El rostro no coincide con el registrado.")
+    
+@app.get("/auth/metodos_login/{email}")
+def metodos_login_endpoint(email: str):
+    metodos = db_manager.verificar_metodos_login(email)
+    
+    if not metodos:
+        # Si el correo no existe, devolvemos falso en todo para no dar pistas a posibles atacantes
+        return {"tiene_pin": False, "tiene_rostro": False}
+        
+    return metodos
+    
+    # 4. LA MAGIA: Comparar los dos rostros (tolerancia de 0.5 para mayor seguridad, por defecto es 0.6)
+    coincidencias = face_recognition.compare_faces([rostro_guardado], rostro_capturado, tolerance=0.5)
+    
+    if coincidencias[0]:
+        # ¡Son la misma persona! Generamos el token de acceso
+        token_data = {"sub": str(user_id), "rol": rol}
+        token = crear_token_acceso(token_data)
+        return {
+            "success": True, 
+            "access_token": token,
+            "usuario": {"id": user_id, "nombre": nombre, "rol": rol, "email": req.email}
+        }
+    else:
+        raise HTTPException(status_code=401, detail="El rostro no coincide con el registrado.")
 
 # --- RUTAS DE PERFIL DE USUARIO ---
 @app.get("/usuario/perfil/{user_id}")
@@ -137,6 +328,22 @@ def cambiar_password_endpoint(req: CambiarPasswordRequest):
     except AttributeError:
         # Si la función aún no está programada en tu db_manager, la API no crasheará y avisará amablemente
         raise HTTPException(status_code=501, detail="La función cambiar_password aún no está implementada en tu base de datos.")
+
+# Modelos y Endpoint para cambiar PIN
+class CambiarPinRequest(BaseModel):
+    user_id: int
+    pin_antiguo: str
+    pin_nuevo: str
+
+@app.post("/usuario/cambiar_pin")
+def cambiar_pin_endpoint(req: CambiarPinRequest):
+    try:
+        exito = db_manager.cambiar_pin(req.user_id, req.pin_antiguo, req.pin_nuevo)
+        if not exito:
+            raise HTTPException(status_code=400, detail="El PIN antiguo es incorrecto")
+        return {"success": True, "mensaje": "PIN actualizado correctamente"}
+    except AttributeError:
+        raise HTTPException(status_code=501, detail="La función cambiar_pin no está lista.")
 
 class ActualizarUsuarioRequest(BaseModel):
     nombre: str
@@ -301,10 +508,21 @@ def rechazar_eliminacion_endpoint(user_id: int, admin_id: int):
 @app.post("/chat/nueva")
 def crear_conversacion_endpoint(req: NuevaConversacionRequest):
     try:
-        chat_id = db_manager.crear_nueva_conversacion(req.user_id, req.titulo)
+        # Indicamos explícitamente que es tipo 'ia'
+        chat_id = db_manager.crear_nueva_conversacion(req.user_id, req.titulo, tipo="ia")
         return {"success": True, "conversacion_id": chat_id, "mensaje": "Conversación iniciada correctamente"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear conversación: {str(e)}")
+
+@app.get("/chat/historial_ia/{user_id}")
+def obtener_historial_ia_endpoint(user_id: int):
+    chats = db_manager.obtener_conversaciones_ia(user_id)
+    return {"success": True, "conversaciones": chats}
+
+@app.get("/chat/historial_alertas/{user_id}")
+def obtener_historial_alertas_endpoint(user_id: int):
+    alertas = db_manager.obtener_alertas_usuario(user_id)
+    return {"success": True, "alertas": alertas}
 
 @app.get("/chat/conversaciones/{user_id}")
 def obtener_conversaciones_endpoint(user_id: int):
@@ -326,17 +544,16 @@ def enviar_mensaje_endpoint(req: ChatRequest):
     
     if not historial_previo:
         db_manager.actualizar_titulo_chat(req.conversacion_id, req.pregunta[:30] + "...")
-        
-    # ¡Faltaba regresar la respuesta de la IA al frontend!
+ 
     return {"success": True, "respuesta": respuesta_ia}
 
 
 # --- RUTAS DE EMERGENCIAS Y CUIDADOR ---
 @app.get("/cuidador/alertas")
 def obtener_alertas_cuidador_endpoint(user_id: int):
-    if user_id == 0 or user_id == 999:
-        conversaciones = db_manager.obtener_todas_las_conversaciones()
-        return {"success": True, "alertas": conversaciones}
+    # La vista del cuidador ahora solo consumirá alertas
+    alertas = db_manager.obtener_todas_las_alertas()
+    return {"success": True, "alertas": alertas}
         
     usuario = db_manager.obtener_info_usuario(user_id)
     if not usuario or usuario["rol"] == "Visitante":
@@ -348,8 +565,9 @@ def obtener_alertas_cuidador_endpoint(user_id: int):
 @app.post("/chat/alerta")
 def enviar_alerta_endpoint(req: AlertaRequest):
     try:
-        titulo = f"🚨 URGENTE: {req.zona}"
-        chat_id = db_manager.crear_nueva_conversacion(req.user_id, titulo)
+        titulo = f"Emergencia: {req.zona}"
+        # Indicamos explícitamente que es tipo 'alerta'
+        chat_id = db_manager.crear_nueva_conversacion(req.user_id, titulo, tipo="alerta")
         db_manager.guardar_mensaje(chat_id, "Usuario", req.descripcion)
         return {"success": True, "conversacion_id": chat_id}
     except Exception as e:
@@ -374,12 +592,8 @@ def enviar_mensaje_directo_endpoint(req: MensajeCuidadorRequest):
 @app.post("/chat/resolver/{conversacion_id}")
 def resolver_alerta_endpoint(conversacion_id: int):
     try:
-        conn = db_manager.get_connection()
-        c = conn.cursor()
-        c.execute("UPDATE conversaciones SET titulo = '[RESUELTO] ' || titulo WHERE id = %s AND titulo NOT LIKE '[RESUELTO]%%'", (conversacion_id,))
-        conn.commit()
-        c.close()
-        conn.close()
+        # Usamos el nuevo sistema de estado en lugar de cambiar el título
+        db_manager.resolver_alerta(conversacion_id)
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,6 +1,7 @@
 import psycopg2
 import hashlib
 import os
+import json
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
@@ -15,20 +16,25 @@ def get_connection():
 def _hash_password(password):
     return hashlib.sha256(str(password).encode('utf-8')).hexdigest()
 
-def registrar_usuario(nombre, email, password, telefono, fecha_nac, genero, rol='Visitante'):
+# 1. Actualiza la función registrar_usuario para aceptar el PIN
+def registrar_usuario(nombre, email, password, telefono, fecha_nac, genero, rol='Visitante', pin=None):
     email_clean = email.strip().lower()
-    # Permitir correos @zoopedia si el admin está creando un Cuidador
     if email_clean == 'admin':
         return False 
         
     conn = get_connection()
     c = conn.cursor()
     password_cifrada = _hash_password(password)
+    
+    # Encriptamos el PIN si el usuario lo proporcionó
+    pin_cifrado = _hash_password(pin) if pin else None
+
     try:
+        # Añadimos la columna pin a la consulta SQL
         c.execute('''
-            INSERT INTO usuarios (nombre, email, password, telefono, fecha_nac, genero, rol)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ''', (nombre, email, password_cifrada, telefono, str(fecha_nac), genero, rol))
+            INSERT INTO usuarios (nombre, email, password, telefono, fecha_nac, genero, rol, pin)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ''', (nombre, email, password_cifrada, telefono, str(fecha_nac), genero, rol, pin_cifrado))
         conn.commit()
         return True
     except psycopg2.IntegrityError:
@@ -37,6 +43,23 @@ def registrar_usuario(nombre, email, password, telefono, fecha_nac, genero, rol=
     finally:
         c.close()
         conn.close()
+
+# 2. Añade esta NUEVA función al final de la sección de usuarios
+def login_pin(email, pin):
+    """Verifica el inicio de sesión usando correo y PIN encriptado"""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    email_clean = email.strip().lower() 
+    pin_cifrado = _hash_password(pin) # Encriptamos el PIN ingresado para compararlo
+    
+    query = "SELECT id, nombre, rol FROM usuarios WHERE LOWER(email) = %s AND pin = %s"
+    c.execute(query, (email_clean, pin_cifrado))
+    
+    usuario = c.fetchone()
+    c.close()
+    conn.close()
+    return usuario
 
 def eliminar_usuario(user_id):
     """Elimina un usuario y todas sus conversaciones asociadas"""
@@ -67,6 +90,24 @@ def login_usuario(email, password):
     c.close()
     conn.close()
     return usuario
+
+def verificar_metodos_login(email):
+    """Verifica si un usuario tiene PIN o Rostro configurado dado su correo."""
+    conn = get_connection()
+    c = conn.cursor()
+    email_clean = email.strip().lower()
+    
+    c.execute("SELECT pin, rostro_encoding FROM usuarios WHERE LOWER(email) = %s", (email_clean,))
+    usuario = c.fetchone()
+    c.close()
+    conn.close()
+    
+    if usuario:
+        return {
+            "tiene_pin": True if usuario[0] else False,
+            "tiene_rostro": True if usuario[1] else False
+        }
+    return None
 
 def obtener_todos_los_usuarios():
     """Obtiene la lista de todos los usuarios registrados para el panel de admin"""
@@ -110,7 +151,8 @@ def actualizar_usuario(user_id, nombre, email, telefono, fecha_nac, genero, rol)
 def obtener_info_usuario(user_id):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT id, nombre, email, telefono, fecha_nac, genero, rol, tema, fondo, burbuja, avatar FROM usuarios WHERE id = %s", (user_id,))
+    # Añadimos pin y rostro_encoding a la consulta
+    c.execute("SELECT id, nombre, email, telefono, fecha_nac, genero, rol, tema, fondo, burbuja, avatar, pin, rostro_encoding FROM usuarios WHERE id = %s", (user_id,))
     usuario = c.fetchone()
     c.close()
     conn.close()
@@ -118,7 +160,10 @@ def obtener_info_usuario(user_id):
         return {
             "id": usuario[0], "nombre": usuario[1], "email": usuario[2],
             "telefono": usuario[3], "fecha_nac": usuario[4], "genero": usuario[5], "rol": usuario[6],
-            "tema": usuario[7], "fondo": usuario[8], "burbuja": usuario[9], "avatar": usuario[10]
+            "tema": usuario[7], "fondo": usuario[8], "burbuja": usuario[9], "avatar": usuario[10],
+            # Evaluamos si existen o son None/Null
+            "tiene_pin": True if usuario[11] else False,
+            "tiene_rostro": True if usuario[12] else False
         }
     return None
 
@@ -173,6 +218,39 @@ def cambiar_password(user_id, password_antigua, password_nueva):
     finally:
         c.close()
         conn.close()
+        
+def cambiar_pin(user_id, pin_antiguo, pin_nuevo):
+    """Actualiza el PIN del usuario verificando primero el antiguo."""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    # 1. Ciframos el PIN antiguo que ingresó el usuario
+    pin_antiguo_cifrado = _hash_password(pin_antiguo)
+    
+    # 2. Obtenemos el PIN actual registrado en la base de datos
+    c.execute("SELECT pin FROM usuarios WHERE id = %s", (user_id,))
+    resultado = c.fetchone()
+    
+    # Verificamos si la cuenta existe y si el PIN coincide
+    if not resultado or resultado[0] != pin_antiguo_cifrado:
+        c.close()
+        conn.close()
+        return False # Retorna falso si el PIN antiguo no es el correcto
+        
+    # 3. Si coincide, ciframos el nuevo PIN y lo guardamos
+    pin_nuevo_cifrado = _hash_password(pin_nuevo)
+    try:
+        c.execute("UPDATE usuarios SET pin = %s WHERE id = %s", (pin_nuevo_cifrado, user_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error al cambiar PIN: {e}")
+        conn.rollback()
+        return False
+    finally:
+        c.close()
+        conn.close()
+
 def registrar_solicitud_eliminacion(user_id, motivo):
     """Marca la cuenta del usuario como pendiente de eliminación"""
     conn = get_connection()
@@ -208,36 +286,63 @@ def rechazar_solicitud_eliminacion(user_id):
     c.close()
     conn.close()
 
-# --- FUNCIONES PARA EL CHAT ---
-def crear_nueva_conversacion(user_id, titulo="Nueva conversación"):
+# --- FUNCIONES PARA EL CHAT ACTUALIZADAS ---
+def crear_nueva_conversacion(user_id, titulo="Nueva conversación", tipo="ia"):
     conn = get_connection()
     c = conn.cursor()
-    # En PostgreSQL usamos RETURNING id para obtener el ID recién creado
-    c.execute("INSERT INTO conversaciones (usuario_id, titulo) VALUES (%s, %s) RETURNING id", (user_id, titulo))
+    c.execute("INSERT INTO conversaciones (usuario_id, titulo, tipo, estado) VALUES (%s, %s, %s, 'abierto') RETURNING id", (user_id, titulo, tipo))
     chat_id = c.fetchone()[0]
     conn.commit()
     c.close()
     conn.close()
     return chat_id
 
-def obtener_conversaciones(user_id):
+def obtener_conversaciones_ia(user_id):
+    """Trae exclusivamente el historial con la IA"""
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT id, titulo FROM conversaciones WHERE usuario_id = %s ORDER BY id DESC", (user_id,))
+    c.execute("SELECT id, titulo, fecha_creacion FROM conversaciones WHERE usuario_id = %s AND tipo = 'ia' ORDER BY id DESC", (user_id,))
     chats = c.fetchall()
     c.close()
     conn.close()
-    return chats
+    return [{"id": c[0], "titulo": c[1], "fecha": str(c[2])} for c in chats]
 
-def guardar_mensaje(conversacion_id, rol, contenido):
+def obtener_alertas_usuario(user_id):
+    """Trae exclusivamente los reportes de un visitante"""
     conn = get_connection()
     c = conn.cursor()
-    c.execute("INSERT INTO mensajes (conversacion_id, rol, contenido) VALUES (%s, %s, %s)", 
-              (conversacion_id, rol, contenido))
+    c.execute("SELECT id, titulo, estado, fecha_creacion FROM conversaciones WHERE usuario_id = %s AND tipo = 'alerta' ORDER BY id DESC", (user_id,))
+    chats = c.fetchall()
+    c.close()
+    conn.close()
+    return [{"id": c[0], "titulo": c[1], "estado": c[2], "fecha": str(c[3])} for c in chats]
+
+def obtener_todas_las_alertas():
+    """Trae TODAS las alertas para la pantalla del Cuidador"""
+    conn = get_connection()
+    c = conn.cursor()
+    query = """
+        SELECT c.id, c.titulo, c.estado, c.fecha_creacion, u.nombre 
+        FROM conversaciones c
+        JOIN usuarios u ON c.usuario_id = u.id
+        WHERE c.tipo = 'alerta'
+        ORDER BY c.estado ASC, c.fecha_creacion DESC
+    """
+    c.execute(query)
+    chats = c.fetchall()
+    c.close()
+    conn.close()
+    return [{"id": row[0], "titulo": row[1], "estado": row[2], "fecha": str(row[3]), "usuario": row[4]} for row in chats]
+
+def resolver_alerta(conversacion_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE conversaciones SET estado = 'resuelto' WHERE id = %s", (conversacion_id,))
     conn.commit()
     c.close()
     conn.close()
-
+    return True
+    
 def obtener_mensajes_chat(conversacion_id):
     conn = get_connection()
     c = conn.cursor()
@@ -247,6 +352,16 @@ def obtener_mensajes_chat(conversacion_id):
     conn.close()
     return [{"role": m[0], "content": m[1]} for m in mensajes]
 
+def guardar_mensaje(conversacion_id, rol, contenido):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("INSERT INTO mensajes (conversacion_id, rol, contenido) VALUES (%s, %s, %s) RETURNING id", (conversacion_id, rol, contenido))
+    msg_id = c.fetchone()[0]
+    conn.commit()
+    c.close()
+    conn.close()
+    return msg_id
+
 def actualizar_titulo_chat(conversacion_id, nuevo_titulo):
     conn = get_connection()
     c = conn.cursor()
@@ -254,78 +369,6 @@ def actualizar_titulo_chat(conversacion_id, nuevo_titulo):
     conn.commit()
     c.close()
     conn.close()
-
-def obtener_todas_las_conversaciones():
-    """Obtiene todas las conversaciones (alertas/chats) para la vista del cuidador"""
-    conn = get_connection()
-    c = conn.cursor()
-    query = """
-        SELECT c.id, c.titulo, c.fecha_creacion, u.nombre 
-        FROM conversaciones c
-        JOIN usuarios u ON c.usuario_id = u.id
-        ORDER BY c.fecha_creacion DESC
-    """
-    c.execute(query)
-    chats = c.fetchall()
-    c.close()
-    conn.close()
-    
-    # Formatear la salida
-    lista_chats = []
-    for row in chats:
-        lista_chats.append({
-            "id": row[0],
-            "titulo": row[1],
-            "fecha": row[2].strftime("%d/%m/%Y %H:%M") if hasattr(row[2], 'strftime') else str(row[2]),
-            "usuario": row[3]
-        })
-    return lista_chats
-
-def obtener_logs_cuidadores():
-    """Obtiene el historial de chat de las conversaciones entre cuidadores y visitantes (alertas)"""
-    conn = get_connection()
-    c = conn.cursor()
-    query = """
-        SELECT c.id, c.titulo, u.nombre as visitante, m.rol, m.contenido, m.fecha
-        FROM conversaciones c
-        JOIN usuarios u ON c.usuario_id = u.id
-        JOIN mensajes m ON c.id = m.conversacion_id
-        WHERE c.titulo LIKE '🚨 URGENTE:%' OR c.titulo LIKE '[RESUELTO]%'
-        ORDER BY c.id DESC, m.id ASC
-    """
-    c.execute(query)
-    logs = c.fetchall()
-    c.close()
-    conn.close()
-
-    lista_logs = []
-    chat_actual = None
-    
-    for row in logs:
-        conv_id = row[0]
-        # Si es una conversación nueva en el ciclo, creamos su "tarjeta"
-        if not chat_actual or chat_actual["id"] != conv_id:
-            if chat_actual:
-                lista_logs.append(chat_actual)
-            chat_actual = {
-                "id": conv_id,
-                "titulo": row[1],
-                "visitante": row[2],
-                "mensajes": []
-            }
-        
-        # Guardamos cada mensaje dentro de su respectiva conversación
-        chat_actual["mensajes"].append({
-            "rol": row[3],
-            "contenido": row[4],
-            "fecha": row[5].strftime("%d/%m/%Y %H:%M") if hasattr(row[5], 'strftime') else str(row[5])
-        })
-        
-    if chat_actual:
-        lista_logs.append(chat_actual)
-        
-    return lista_logs
-
 # ========================================================
 # NUEVAS FUNCIONES PARA EL FORO (POSTGRESQL)
 # ========================================================
@@ -383,3 +426,33 @@ def update_post(conn, post_id, content):
     cursor = conn.cursor()
     cursor.execute("UPDATE foro_posts SET content = %s WHERE id = %s", (content, post_id))
     conn.commit()
+    
+def guardar_rostro(user_id, encoding_list):
+    """Guarda el mapa biométrico del rostro en la BD"""
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        # Convertimos la lista de 128 números a texto JSON
+        encoding_str = json.dumps(encoding_list)
+        c.execute("UPDATE usuarios SET rostro_encoding = %s WHERE id = %s", (encoding_str, user_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error al guardar rostro en BD: {e}")
+        conn.rollback()
+        return False
+    finally:
+        c.close()
+        conn.close()
+
+def obtener_datos_rostro(email):
+    """Obtiene el mapa biométrico de un usuario dado su correo"""
+    conn = get_connection()
+    c = conn.cursor()
+    email_clean = email.strip().lower()
+    
+    c.execute("SELECT id, nombre, rol, rostro_encoding FROM usuarios WHERE LOWER(email) = %s", (email_clean,))
+    usuario = c.fetchone()
+    c.close()
+    conn.close()
+    return usuario

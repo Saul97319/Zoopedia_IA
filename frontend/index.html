@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZoopedIA - Inicio de Sesión y Registro</title>
+    <link rel="icon" type="image/png" href="assets/logo_favicon.png">
     
     <!-- Importar fuente Fredoka -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -557,24 +558,49 @@
                     <div class="input-group">
                         <label for="login-usuario">Usuario</label>
                         <div class="input-wrapper">
-                            <input type="text" id="login-usuario" class="input-field" placeholder="Usuario" required>
+                            <input type="text" id="login-usuario" class="input-field" placeholder="Usuario" onblur="verificarMetodosLogin()" required>
                         </div>
                     </div>
-                    <div style="height: 10px;"></div>
-                    <div class="input-group">
-                        <label for="login-contrasena">Contraseña</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center;">
+                        <label id="label-password">
+                            <input type="radio" name="login_type" value="password" checked onchange="toggleLoginType()"> Contraseña
+                        </label>
+                        <label id="label-pin" style="display: none;">
+                            <input type="radio" name="login_type" value="pin" onchange="toggleLoginType()"> PIN
+                        </label>
+                        <label id="label-rostro" style="display: none;">
+                            <input type="radio" name="login_type" value="rostro" onchange="toggleLoginType()"> Rostro
+                        </label>
+                    </div>
+
+                    <div class="input-group" id="login-secret-group">
+                        <label id="login-secret-label" for="login-secreto">Contraseña</label>
                         <div class="input-wrapper">
-                            <input type="password" id="login-contrasena" class="input-field" placeholder="Contraseña" required>
-                            <button type="button" class="eye-icon" onclick="togglePassword('login-contrasena', 'eye-svg-login')" aria-label="Mostrar contraseña">
+                            <input type="password" id="login-secreto" class="input-field" placeholder="Contraseña">
+                            <button type="button" class="eye-icon" onclick="togglePassword('login-secreto', 'eye-svg-login')" aria-label="Mostrar contraseña">
                                 <svg id="eye-svg-login" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                                 </svg>
                             </button>
                         </div>
                     </div>
+
+                    <div id="login-rostro-group" style="display: none; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px;">
+                        <p style="font-size: 14px; text-align: center; color: #000; font-weight: 500; margin: 0;">Asegúrate de tener buena iluminación</p>
+                        <div style="width: 160px; height: 160px; border-radius: 50%; border: 4px solid #D500F9; overflow: hidden; position: relative; background: #eee;">
+                            <video id="login-video" style="width: 100%; height: 100%; object-fit: cover;" autoplay playsinline></video>
+                            <canvas id="login-canvas" style="display: none;"></canvas>
+                        </div>
+                        <button type="button" id="btn-login-rostro" class="btn btn-primary" onclick="handleLoginRostro(event)">
+                            Escanear e Iniciar
+                        </button>
+                    </div>
+
                     <div style="height: 15px;"></div>
-                    <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+
+                    <button type="submit" id="btn-login-normal" class="btn btn-primary">Iniciar Sesión</button>
                     <button type="button" class="btn btn-secondary" onclick="mostrarVista('register-view')" style="margin-top: 15px;">Registrarme</button>
+
                 </form>
             </div>
         </div>
@@ -614,6 +640,11 @@
                     <div class="input-group">
                         <label for="reg-email">Correo electrónico</label>
                         <input type="email" id="reg-email" class="input-field" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="reg-pin">PIN de seguridad (4 a 6 dígitos)</label>
+                        <input type="password" id="reg-pin" class="input-field" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '');" placeholder="Ej. 1234" required>
                     </div>
 
                     <div class="input-group">
@@ -778,20 +809,178 @@
         }
 
         // --- MANEJO DE ENVÍO DE FORMULARIOS CONECTADOS AL BACKEND ---
+
+        let streamLogin = null; // Variable global para la cámara
+
+        async function verificarMetodosLogin() {
+            // Obtenemos el correo que escribió el usuario
+            const email = document.getElementById('login-usuario').value.trim();
+            
+            const labelPin = document.getElementById('label-pin');
+            const labelRostro = document.getElementById('label-rostro');
+            const radioPassword = document.querySelector('input[value="password"]');
+
+            // Si borró el correo, ocultamos todo por defecto
+            if (!email) {
+                labelPin.style.display = 'none';
+                labelRostro.style.display = 'none';
+                radioPassword.checked = true;
+                toggleLoginType();
+                return;
+            }
+
+            try {
+                // Le preguntamos a nuestra nueva ruta de la API
+                const response = await fetch(`${API_URL}/auth/metodos_login/${encodeURIComponent(email)}`);
+                const data = await response.json();
+
+                // Mostramos u ocultamos las etiquetas dependiendo de la respuesta de la base de datos
+                labelPin.style.display = data.tiene_pin ? 'block' : 'none';
+                labelRostro.style.display = data.tiene_rostro ? 'block' : 'none';
+
+                // Por seguridad: si el usuario había seleccionado "PIN" o "Rostro" pero cambió 
+                // a un correo que no los tiene configurados, lo regresamos a "Contraseña"
+                const currentSelection = document.querySelector('input[name="login_type"]:checked').value;
+                if ((currentSelection === 'pin' && !data.tiene_pin) || (currentSelection === 'rostro' && !data.tiene_rostro)) {
+                    radioPassword.checked = true;
+                    toggleLoginType(); // Para que oculte la cámara si estaba encendida
+                }
+
+            } catch (error) {
+                console.error("Error al verificar los métodos de login:", error);
+            }
+        }
+
+        function toggleLoginType() {
+            const isPin = document.querySelector('input[name="login_type"]:checked').value === "pin";
+            const isRostro = document.querySelector('input[name="login_type"]:checked').value === "rostro";
+            
+            const label = document.getElementById('login-secret-label');
+            const input = document.getElementById('login-secreto');
+            const secretGroup = document.getElementById('login-secret-group');
+            const rostroGroup = document.getElementById('login-rostro-group');
+            const btnNormal = document.getElementById('btn-login-normal');
+            
+            // Si seleccionan Rostro
+            if (isRostro) {
+                secretGroup.style.display = "none";
+                btnNormal.style.display = "none";
+                rostroGroup.style.display = "flex";
+                iniciarCamaraLogin(); // Encendemos la cámara
+            } 
+            // Si seleccionan Contraseña o PIN
+            else {
+                secretGroup.style.display = "flex";
+                btnNormal.style.display = "block";
+                rostroGroup.style.display = "none";
+                detenerCamaraLogin(); // Apagamos la cámara por seguridad
+                
+                if (isPin) {
+                    label.innerText = "PIN (4 a 6 dígitos)";
+                    input.placeholder = "Ingresa tu PIN";
+                    input.setAttribute("maxlength", "6");
+                    input.oninput = function() { this.value = this.value.replace(/[^0-9]/g, ''); }; 
+                } else {
+                    label.innerText = "Contraseña";
+                    input.placeholder = "Contraseña";
+                    input.removeAttribute("maxlength");
+                    input.oninput = null; 
+                }
+            }
+        }
+
+        async function iniciarCamaraLogin() {
+            const video = document.getElementById('login-video');
+            try {
+                streamLogin = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = streamLogin;
+            } catch (err) {
+                console.error("Error al acceder a la cámara: ", err);
+                mostrarErrorToast("No se pudo acceder a la cámara. Verifica permisos.");
+            }
+        }
+
+        function detenerCamaraLogin() {
+            if (streamLogin) {
+                streamLogin.getTracks().forEach(track => track.stop());
+                streamLogin = null;
+            }
+        }
+
+        async function handleLoginRostro(event) {
+            // 1. Evitamos cualquier recarga accidental de la página
+            if (event) event.preventDefault();
+
+            const email = document.getElementById('login-usuario').value.trim();
+            
+            if (!email) {
+                mostrarErrorToast("Por favor, ingresa primero tu Usuario (Correo).");
+                return;
+            }
+
+            const video = document.getElementById('login-video');
+            const canvas = document.getElementById('login-canvas');
+            const btnRostro = document.getElementById('btn-login-rostro');
+
+            // Capturar frame
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imagenBase64 = canvas.toDataURL('image/jpeg');
+
+            btnRostro.innerHTML = "Analizando rostro...";
+            btnRostro.disabled = true;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login_rostro`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, imagen_base64: imagenBase64 })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Guardar sesión
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+                    
+                    detenerCamaraLogin();
+
+                    // Redirección por roles
+                    const rol = data.usuario.rol;
+                    if (rol === "Admin") window.location.href = "admin_panel.html";
+                    else if (rol === "Cuidador") window.location.href = "chat_cuidador.html";
+                    else window.location.href = "chat_visitante.html";
+                } else {
+                    mostrarErrorToast(data.detail || "Rostro no reconocido. Intenta de nuevo.");
+                }
+            } catch (error) {
+                // 2. CAMBIO CLAVE: Mostraremos el error real de JavaScript en la pantalla
+                console.error("Error detallado capturado por JS:", error);
+                mostrarErrorToast("Error JS: " + error.message);
+            } finally {
+                btnRostro.innerHTML = "Escanear e Iniciar";
+                btnRostro.disabled = false;
+            }
+        }
         
         async function handleLogin(event) {
             event.preventDefault();
             
-            // 1. Obtener los datos del formulario
             const email = document.getElementById('login-usuario').value;
-            const password = document.getElementById('login-contrasena').value;
+            const secreto = document.getElementById('login-secreto').value;
+            const isPin = document.querySelector('input[name="login_type"]:checked').value === "pin";
+
+            // Decidir a qué URL pegarle y cómo armar el body
+            const endpoint = isPin ? "/auth/login_pin" : "/auth/login";
+            const bodyData = isPin ? { email: email, pin: secreto } : { email: email, password: secreto };
 
             try {
-                // 2. Enviar la petición POST a FastAPI
-                const response = await fetch(`${API_URL}/auth/login`, {
+                const response = await fetch(`${API_URL}${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, password: password })
+                    body: JSON.stringify(bodyData)
                 });
 
                 const data = await response.json();
@@ -832,6 +1021,7 @@
             const fecha = document.getElementById('reg-fecha').value;
             const genero = document.getElementById('reg-genero').value;
             const telefono = document.getElementById('reg-telefono').value;
+            const pin = document.getElementById('reg-pin').value;
 
             // 2. Validaciones locales (las que ya tenías)
             if (pass1 !== pass2) {
@@ -848,6 +1038,11 @@
                 return;
             }
 
+            if (pin.length < 4) {
+                mostrarAlertaDerecha("El PIN debe tener al menos 4 dígitos numéricos.");
+                return;
+            }
+
             try {
                 // 3. Enviar la petición POST para registrar
                 const response = await fetch(`${API_URL}/auth/registrar`, {
@@ -859,7 +1054,8 @@
                         password: pass1,
                         telefono: telefono,
                         fecha_nac: fecha,
-                        genero: genero
+                        genero: genero,
+                        pin: pin
                     })
                 });
 

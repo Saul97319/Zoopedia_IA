@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zoopedia IA - Admin Panel</title>
+    <link rel="icon" type="image/png" href="assets/logo_favicon.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -94,9 +95,6 @@
                 </div>
                 <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Zoopedia IA</h1>
                 <p class="text-slate-500 font-semibold mt-1">Panel de Administración</p>
-                <button onclick="abrirBandejaBajas()" class="bg-red-100 text-red-600 hover:bg-red-200 px-4 py-2 rounded-xl font-bold transition-colors shadow-sm ml-4 border border-red-200">
-                    <i class="fa-solid fa-user-minus"></i> Solicitudes de Baja
-                </button>
             </div>
 
             <form id="login-form" class="space-y-5 relative z-10">
@@ -427,8 +425,8 @@
         </div>
 
     <script>
-        // Agregar esto al inicio de tus scripts del admin_panel
-        const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
+    // Definimos la URL de la API localmente
+        const API_URL = "http://127.0.0.1:8000";
 
         async function abrirBandejaBajas() {
             document.getElementById('modal-bajas').classList.remove('hidden');
@@ -442,6 +440,10 @@
         async function cargarSolicitudesBajas() {
             const contenedor = document.getElementById('lista-bajas');
             contenedor.innerHTML = '<p class="text-slate-500 text-center py-4">Cargando solicitudes...</p>';
+
+            // Obtenemos el usuario en el momento exacto en que abre el modal (ya iniciada la sesión)
+            const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
+            if (!usuarioAdmin) return;
 
             try {
                 const res = await fetch(`${API_URL}/admin/solicitudes_eliminacion?admin_id=${usuarioAdmin.id}`);
@@ -474,14 +476,15 @@
 
         async function aprobarBaja(userId) {
             if(!confirm("¿Estás seguro de eliminar PERMANENTEMENTE esta cuenta?")) return;
+            const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
             try {
-                // Reutiliza tu ruta de eliminación existente (la que ya borra al usuario y sus chats)
                 await fetch(`${API_URL}/admin/usuario/${userId}?admin_id=${usuarioAdmin.id}`, { method: 'DELETE' });
                 cargarSolicitudesBajas(); // Recargar lista
             } catch(e) { alert("Error al procesar"); }
         }
 
         async function rechazarBaja(userId) {
+            const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
             try {
                 await fetch(`${API_URL}/admin/rechazar_eliminacion/${userId}?admin_id=${usuarioAdmin.id}`, { method: 'POST' });
                 cargarSolicitudesBajas(); // Recargar lista

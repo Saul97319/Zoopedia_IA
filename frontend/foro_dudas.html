@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zoopedia - Comunidad y FAQ</title>
+    <link rel="icon" type="image/png" href="assets/logo_favicon.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome para íconos -->
@@ -94,9 +95,9 @@
     <!-- Header / Hero Section -->
     <header class="bg-green-600 text-white py-12 px-6 rounded-b-3xl shadow-xl relative overflow-hidden">
         <!-- Botón para regresar al Login -->
-        <a href="index.html" class="absolute top-4 left-4 sm:top-6 sm:left-8 bg-white text-green-600 hover:bg-green-50 hover:text-green-800 transition-all duration-300 transform hover:-translate-x-1 hover:scale-105 px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl font-extrabold shadow-lg flex items-center gap-2 z-50 border-2 border-transparent hover:border-green-200">
+        <a id="btn-regresar" href="#" class="absolute top-4 left-4 sm:top-6 sm:left-8 bg-white text-green-600 hover:bg-green-50 hover:text-green-800 transition-all duration-300 transform hover:-translate-x-1 hover:scale-105 px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl font-extrabold shadow-lg flex items-center gap-2 z-50 border-2 border-transparent hover:border-green-200">
             <i class="fa-solid fa-arrow-left-long text-xl"></i>
-            <span class="hidden sm:inline">Regresar al Inicio</span>
+            <span class="hidden sm:inline">Regresar</span>
         </a>
         <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style="background-image: radial-gradient(circle, #ffffff 2px, transparent 2px); background-size: 30px 30px;"></div>
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between relative z-10">
@@ -239,7 +240,33 @@
     <!-- Lógica JavaScript (Conexión a PostgreSQL vía API) -->
     <!-- Lógica JavaScript (Conexión a PostgreSQL vía API) -->
     <script>
-        const API_BASE_URL = 'http://127.0.0.1:8000/api/foro'; 
+        const API_BASE_URL = 'http://127.0.0.1:8000/api/foro';
+
+                // --- LÓGICA DE REDIRECCIÓN DINÁMICA ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnRegresar = document.getElementById('btn-regresar');
+            
+            // Revisamos si hay una sesión activa en el navegador
+            const token = localStorage.getItem('access_token');
+            const usuarioStr = localStorage.getItem('usuario');
+
+            if (token && usuarioStr) {
+                // Si hay sesión, leemos qué tipo de usuario es
+                const usuario = JSON.parse(usuarioStr);
+                
+                // Redirigimos según el rol (así te sirve para Cuidadores y Admins también)
+                if (usuario.rol === 'Admin') {
+                    btnRegresar.href = 'admin_panel.html';
+                } else if (usuario.rol === 'Cuidador') {
+                    btnRegresar.href = 'chat_cuidador.html';
+                } else {
+                    btnRegresar.href = 'chat_visitante.html';
+                }
+            } else {
+                // Si no hay sesión, es un usuario anónimo desde el login
+                btnRegresar.href = 'index.html';
+            }
+        });
         
         let postsArray = [];
         let postToDeleteId = null;
