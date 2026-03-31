@@ -127,18 +127,12 @@
         <!-- (4) Historial de Conversaciones -->
         <div class="flex-1 overflow-y-auto p-4 space-y-6">
             <div id="historial-sidebar" class="flex-1 overflow-y-auto p-4 space-y-2">
-                <div class="text-center text-slate-400 py-4 text-xs">Cargando historial...</div>
+            <div id="historial-loading" class="text-center text-slate-400 py-4 text-xs">
+                Cargando historial...
             </div>
-            <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ayer</h3>
-                <div class="space-y-1">
-                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3">
-                        <i class="fa-regular fa-message"></i> Información jirafas
-                    </button>
-                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3">
-                        <i class="fa-regular fa-message"></i> Precio teleférico
-                    </button>
-                </div>
+            <div id="historial-chats" class="hidden space-y-2"></div>
+        </div>
+        </div>
             </div>
         </div>
     </aside>
@@ -983,8 +977,12 @@
             if (typingId) document.getElementById(typingId).remove();
             const time = getCurrentTime();
             
-            // Reemplazamos los saltos de línea por etiquetas <br> para que respete los párrafos
-            const textoFormateado = texto.replace(/\n/g, '<br>');
+            // 1. TRADUCCIÓN DE MARKDOWN A HTML
+            // Reemplazamos los dobles asteriscos por la etiqueta <strong> de HTML
+            let textoFormateado = texto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // 2. Reemplazamos los saltos de línea por etiquetas <br> para los párrafos
+            textoFormateado = textoFormateado.replace(/\n/g, '<br>');
 
             const msgHTML = `
                 <div class="flex items-start gap-4 mb-8 animate-fade-in-up w-full">
@@ -1000,35 +998,74 @@
             chatContainer.insertAdjacentHTML('beforeend', msgHTML);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-
-        // --- LÓGICA DEL HISTORIAL LATERAL (SOLO IA) ---
+        // --- LÓGICA DEL HISTORIAL LATERAL DINÁMICO ---
         async function cargarHistorialIA() {
-            const contenedor = document.getElementById('historial-sidebar');
+            const contenedorLoading = document.getElementById('historial-loading');
+            const contenedorChats = document.getElementById('historial-chats');
+            
             try {
-                // Ahora llamamos a la ruta específica de IA
+                // Mostrar el mensaje de carga al inicio
+                if (contenedorLoading) contenedorLoading.classList.remove('hidden');
+                if (contenedorChats) contenedorChats.classList.add('hidden');
+
                 const res = await fetch(`${API_URL}/chat/historial_ia/${usuarioActual.id}`);
                 const data = await res.json();
                 const chatsIA = data.conversaciones;
 
-                contenedor.innerHTML = '';
+                // Ocultar el mensaje de carga inmediatamente al recibir la respuesta
+                if (contenedorLoading) contenedorLoading.classList.add('hidden');
                 
+                contenedorChats.innerHTML = ''; // Limpiar el contenedor real
+
                 if (!chatsIA || chatsIA.length === 0) {
-                    contenedor.innerHTML = '<p class="text-xs text-slate-400 text-center mt-4">No hay conversaciones previas.</p>';
+                    contenedorChats.innerHTML = '<p class="text-xs text-slate-400 text-center mt-4">No hay conversaciones previas.</p>';
+                    contenedorChats.classList.remove('hidden'); // Mostrar el contenedor con el mensaje "No hay..."
                     return;
                 }
 
+                // 1. Agrupar los chats por fechas
+                const gruposFechas = {};
+                const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+                const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1);
+
                 chatsIA.forEach(chat => {
-                    const id = chat.id;
-                    const titulo = chat.titulo;
-                    contenedor.innerHTML += `
-                        <button onclick="abrirChatHistorial(${id}, '${titulo.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3 truncate mb-1">
-                            <i class="fa-regular fa-message flex-shrink-0"></i> 
-                            <span class="truncate">${titulo}</span>
-                        </button>
-                    `;
+                    const fechaParte = chat.fecha.split(' ')[0]; 
+                    const [year, month, day] = fechaParte.split('-');
+                    const fechaChat = new Date(year, month - 1, day); fechaChat.setHours(0,0,0,0);
+
+                    let etiqueta = (fechaChat.getTime() === hoy.getTime()) ? "Hoy" :
+                                    (fechaChat.getTime() === ayer.getTime()) ? "Ayer" :
+                                    `${day}/${month}`;
+
+                    if (!gruposFechas[etiqueta]) gruposFechas[etiqueta] = [];
+                    gruposFechas[etiqueta].push(chat);
                 });
+
+                // 2. Renderizar el historial agrupado en el menú lateral
+                for (const etiqueta in gruposFechas) {
+                    contenedorChats.innerHTML += `
+                        <div class="mt-4 mb-2">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">${etiqueta}</h3>
+                        </div>
+                    `;
+                    gruposFechas[etiqueta].forEach(chat => {
+                        const id = chat.id;
+                        const titulo = chat.titulo;
+                        contenedorChats.innerHTML += `
+                            <button onclick="abrirChatHistorial(${id}, '${titulo.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3 truncate mb-1">
+                                <i class="fa-regular fa-message flex-shrink-0 text-slate-400"></i> 
+                                <span class="truncate">${titulo}</span>
+                            </button>
+                        `;
+                    });
+                }
+                contenedorChats.classList.remove('hidden'); // Mostrar los chats cargados
             } catch (error) {
-                contenedor.innerHTML = '<p class="text-xs text-red-400 text-center mt-4">Error al cargar historial.</p>';
+                if (contenedorLoading) contenedorLoading.classList.add('hidden');
+                if (contenedorChats) {
+                    contenedorChats.innerHTML = '<p class="text-xs text-red-400 text-center mt-4">Error al cargar historial.</p>';
+                    contenedorChats.classList.remove('hidden');
+                }
             }
         }
 
@@ -1101,15 +1138,22 @@
             // Validamos que exista al menos texto o una imagen para poder enviar algo
             if(!texto && !imagenAdjuntaBase64) return;
 
+            // Creamos una bandera para saber si este es el primer mensaje del chat
+            let esNuevoChat = false;
+
             if (!currentChatId) {
                 try {
+                    // Le damos un título temporal más limpio que el backend reemplazará
                     const res = await fetch(`${API_URL}/chat/nueva`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: usuarioActual.id, titulo: "Consulta con imagen" })
+                        body: JSON.stringify({ user_id: usuarioActual.id, titulo: "Iniciando conversación..." })
                     });
                     const data = await res.json();
-                    if (res.ok) { currentChatId = data.conversacion_id; cargarHistorialIA();
+                    if (res.ok) { 
+                        currentChatId = data.conversacion_id; 
+                        esNuevoChat = true; // Marcamos que acabamos de crear un chat
+                        // Nota: Ya NO llamamos a cargarHistorialIA() aquí
                     }
                     else return;
                 } catch (e) {
@@ -1159,9 +1203,15 @@
                     // Si el backend dice que todo fue un éxito, imprimimos la respuesta
                     if (data.success) {
                         agregarMensajeIA(data.respuesta, typingId);
+                        
+                        // MAGIA AQUÍ: Si era un chat nuevo, ahora que el backend ya procesó la
+                        // pregunta y generó el título real, le decimos al panel que se actualice.
+                        if (esNuevoChat) {
+                            cargarHistorialIA();
+                        }
                     } else {
-                        // Si hubo un error, imprimimos la advertencia real en lugar de "undefined"
-                        agregarMensajeIA("⚠️ Lo siento, tuve un problema al procesar la imagen: " + data.error, typingId);
+                        // Si hubo un error, imprimimos la advertencia real
+                        agregarMensajeIA("⚠️ Lo siento, tuve un problema al procesar la solicitud: " + data.error, typingId);
                     }
                 }
             } catch (error) {
