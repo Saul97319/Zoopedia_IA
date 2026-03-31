@@ -4,7 +4,7 @@ Zoopedia IA es una plataforma inteligente diseñada para mejorar la experiencia 
  
  Características Principales
 
-* Asistente Virtual Educativo (RAG):** Un bot interactivo capaz de responder preguntas sobre animales, horarios y reglas del zoológico, basando sus respuestas estrictamente en documentos oficiales en PDF.
+* **Asistente Virtual Educativo (RAG):** Un bot interactivo capaz de responder preguntas sobre animales, horarios y reglas del zoológico, basando sus respuestas estrictamente en documentos oficiales en PDF.
 * Sistema de Roles y Autenticación:** Cuentas protegidas mediante tokens JWT para Visitantes, Cuidadores y Administradores, cada uno con permisos y vistas específicas.
 * Gestión de Emergencias:** Sistema de alertas en tiempo real que permite a los visitantes reportar incidentes por zona directamente al personal autorizado.
 * Catálogo Dinámico:** Panel administrativo para subir y actualizar las guías de los animales en formato PDF, las cuales reentrenan automáticamente la memoria de la IA.
@@ -65,13 +65,15 @@ pip install -r backend/requirements.txt
 Crea un archivo `.env` en el directorio `backend/` con tus credenciales. Es indispensable contar con tu clave de API de Google para que el motor conversacional funcione:
 
 GOOGLE_API_KEY=tu_clave_de_api_aqui
+DATABASE_URL=tu_link_de_tu_base_de_datos_de_Supabase_aqui
 
 (Nota: El proyecto utiliza la clave secreta interna preconfigurada `SECRET_KEY=sPgXuDqxrp74zick9H8DXDnmjTQlmMSOeBIETFh2t0Q` para la firma de tokens JWT)*.
 
  5. Ejecución de la API (Backend)
 Levanta el servidor FastAPI para habilitar los endpoints. Desde la raíz del proyecto, ejecuta:
 
-uvicorn backend.main_api:app --reload
+cd backend
+uvicorn main_api:app --reload
 
 La API estará disponible por defecto en `http://127.0.0.1:8000`.
 
