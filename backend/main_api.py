@@ -19,6 +19,7 @@ import json
 import google.generativeai as genai
 import io
 from PIL import Image
+from dotenv import load_dotenv
 
 # 1. Inicializar la app FastAPI
 app = FastAPI(title="Zoopedia API")
@@ -50,7 +51,15 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
 # --- CONFIGURACIÓN DE GEMINI ---
-GOOGLE_API_KEY = "AIzaSyDYliFFoBVWPsk-k4caq5QsQNm38xHdSWs" # Pon tu clave aquí
+# 1. Buscamos la ruta exacta del archivo .env que está junto a este script
+base_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(base_dir, ".env")
+
+# 2. Cargamos el archivo .env forzando la lectura
+load_dotenv(dotenv_path=env_path, override=True)
+
+# 3. Obtenemos la clave (lee el nombre exacto que le pusimos)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") 
 genai.configure(api_key=GOOGLE_API_KEY)
 
 def crear_token_acceso(data: dict):

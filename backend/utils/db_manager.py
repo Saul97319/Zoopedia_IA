@@ -362,6 +362,25 @@ def guardar_mensaje(conversacion_id, rol, contenido):
     conn.close()
     return msg_id
 
+def guardar_imagen_chat(mensaje_id, imagen_base64):
+    """Guarda la imagen enviada por el usuario asociada a su mensaje en la BD"""
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        # Intenta actualizar el mensaje para agregarle la imagen en base64
+        c.execute("UPDATE mensajes SET imagen_base64 = %s WHERE id = %s", (imagen_base64, mensaje_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        # Si la columna 'imagen_base64' no existe en tu tabla de Postgres u ocurre un error,
+        # lo atrapamos para que la aplicación no se caiga y Gemini siga respondiendo.
+        print(f"Advertencia al guardar imagen en historial: {e}")
+        conn.rollback()
+        return False
+    finally:
+        c.close()
+        conn.close()
+
 def actualizar_titulo_chat(conversacion_id, nuevo_titulo):
     conn = get_connection()
     c = conn.cursor()
