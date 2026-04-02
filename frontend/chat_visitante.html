@@ -120,26 +120,19 @@
             <!-- (2) Barra de Búsqueda -->
             <div class="mt-4 relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
-                <input type="text" placeholder="Buscar chats..." class="w-full bg-slate-100 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zoo focus:bg-white transition-all">
+                <input type="text" id="buscador-chats" oninput="ejecutarBusqueda(this.value)" placeholder="Buscar chats..." class="w-full bg-slate-100 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zoo focus:bg-white transition-all">
             </div>
         </div>
 
         <!-- (4) Historial de Conversaciones -->
         <div class="flex-1 overflow-y-auto p-4 space-y-6">
             <div id="historial-sidebar" class="flex-1 overflow-y-auto p-4 space-y-2">
-                <div class="text-center text-slate-400 py-4 text-xs">Cargando historial...</div>
+            <div id="historial-loading" class="text-center text-slate-400 py-4 text-xs">
+                Cargando historial...
             </div>
-            <div>
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Ayer</h3>
-                <div class="space-y-1">
-                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3">
-                        <i class="fa-regular fa-message"></i> Información jirafas
-                    </button>
-                    <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3">
-                        <i class="fa-regular fa-message"></i> Precio teleférico
-                    </button>
-                </div>
-            </div>
+            <div id="historial-chats" class="hidden space-y-2"></div>
+        </div>
+            
         </div>
     </aside>
 
@@ -465,6 +458,38 @@
             </button>
         </div>
     </div>
+    <div id="modal-renombrar" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative">
+            <button onclick="cerrarModalRenombrar()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-solid fa-pen text-zoo"></i> Renombrar Chat</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Nuevo nombre</label>
+                    <input type="text" id="input-renombrar-chat" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-zoo outline-none transition-all mt-1">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="cerrarModalRenombrar()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl transition-colors">Cancelar</button>
+                    <button onclick="confirmarRenombrar()" class="flex-1 bg-zoo hover:bg-zoo-dark text-white font-bold py-3 rounded-xl transition-colors shadow-md">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-eliminar" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500 text-3xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">¿Eliminar Chat?</h2>
+            <p class="text-sm text-slate-500 mb-6">¿Estás seguro de que deseas eliminar este chat permanentemente? Esta acción no se puede deshacer.</p>
+            <div class="flex gap-3">
+                <button onclick="cerrarModalEliminar()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl transition-colors">Cancelar</button>
+                <button onclick="confirmarEliminar()" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors shadow-md">Eliminar</button>
+            </div>
+        </div>
+    </div>
 
     <div id="modal-tema" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative flex flex-col max-h-[90vh]">
@@ -541,12 +566,18 @@
 
                 <div>
                     <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-regular fa-image mr-1 text-zoo"></i> Fondo del Chat</h3>
-                    <div class="grid grid-cols-4 gap-2">
-                        <button onclick="cambiarFondoChat('default')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-500 hover:border-zoo transition-colors">Blanco</button>
-                        <button onclick="cambiarFondoChat('black')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-900 flex items-center justify-center text-xs font-bold text-white hover:border-zoo transition-colors">Negro</button>
-                        <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg');"></button>
-                        <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg');"></button>
-                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-3">
+                        
+                        <button onclick="cambiarFondoChat('none')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-200 flex flex-col items-center justify-center text-xs font-bold text-slate-500 hover:border-zoo transition-colors shadow-sm" title="Automático según el tema">Ninguno</button>
+                        
+                        <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all shadow-sm" style="background-image: url('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg');"></button>
+                        
+                        <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all shadow-sm" style="background-image: url('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg');"></button>
+
+                        <button onclick="cambiarFondoChat('assets/fondo_animales.png')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all shadow-sm" style="background-image: url('assets/fondo_animales.png');"></button>
+
+                        </div>
                 </div>
 
                 <div>
@@ -1001,34 +1032,114 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // --- LÓGICA DEL HISTORIAL LATERAL (SOLO IA) ---
-        async function cargarHistorialIA() {
-            const contenedor = document.getElementById('historial-sidebar');
+        // Función para resaltar el texto buscado con estilo de marca-textos azul
+        function resaltarTexto(textoOriginal, terminoBusqueda) {
+            if (!terminoBusqueda || terminoBusqueda.trim() === '') return textoOriginal;
+            
+            // 1. EL ESCUDO: Escapamos caracteres especiales (*, ?, +, etc.) para que no rompan el código
+            const terminoSeguro = terminoBusqueda.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            
+            // 2. Aplicamos la búsqueda usando el término ya seguro
+            const regex = new RegExp(`(${terminoSeguro})`, 'gi');
+            return textoOriginal.replace(regex, '<span class="bg-blue-100 text-blue-700 font-bold px-0.5 rounded">$1</span>');
+        }
+
+        // --- LÓGICA DEL HISTORIAL LATERAL DINÁMICO ---
+        async function cargarHistorialIA(termino = null) {
+            const contenedorLoading = document.getElementById('historial-loading');
+            const contenedorChats = document.getElementById('historial-chats');
+            
             try {
-                // Ahora llamamos a la ruta específica de IA
-                const res = await fetch(`${API_URL}/chat/historial_ia/${usuarioActual.id}`);
+                if (contenedorLoading) contenedorLoading.classList.remove('hidden');
+                if (contenedorChats) contenedorChats.classList.add('hidden');
+
+                // 1. Añadimos el término de búsqueda a la URL si es que existe
+                let url = `${API_URL}/chat/historial_ia/${usuarioActual.id}`;
+                if (termino && termino.trim() !== '') {
+                    url += `?q=${encodeURIComponent(termino)}`;
+                }
+
+                const res = await fetch(url);
                 const data = await res.json();
                 const chatsIA = data.conversaciones;
 
-                contenedor.innerHTML = '';
-                
+                if (contenedorLoading) contenedorLoading.classList.add('hidden');
+                contenedorChats.innerHTML = ''; 
+
+                // 2. Personalizamos el mensaje si no hay resultados en la búsqueda
                 if (!chatsIA || chatsIA.length === 0) {
-                    contenedor.innerHTML = '<p class="text-xs text-slate-400 text-center mt-4">No hay conversaciones previas.</p>';
+                    const msjError = termino ? `No se encontraron chats con "${termino}".` : 'No hay conversaciones previas.';
+                    contenedorChats.innerHTML = `<p class="text-xs text-slate-400 text-center mt-4">${msjError}</p>`;
+                    contenedorChats.classList.remove('hidden'); 
                     return;
                 }
 
+                const gruposFechas = {};
+                const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+                const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1);
+
                 chatsIA.forEach(chat => {
-                    const id = chat.id;
-                    const titulo = chat.titulo;
-                    contenedor.innerHTML += `
-                        <button onclick="abrirChatHistorial(${id}, '${titulo.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3 truncate mb-1">
-                            <i class="fa-regular fa-message flex-shrink-0"></i> 
-                            <span class="truncate">${titulo}</span>
-                        </button>
-                    `;
+                    const fechaParte = chat.fecha.split(' ')[0]; 
+                    const [year, month, day] = fechaParte.split('-');
+                    const fechaChat = new Date(year, month - 1, day); fechaChat.setHours(0,0,0,0);
+
+                    let etiqueta = (fechaChat.getTime() === hoy.getTime()) ? "Hoy" :
+                                    (fechaChat.getTime() === ayer.getTime()) ? "Ayer" :
+                                    `${day}/${month}`;
+
+                    if (!gruposFechas[etiqueta]) gruposFechas[etiqueta] = [];
+                    gruposFechas[etiqueta].push(chat);
                 });
+
+                for (const etiqueta in gruposFechas) {
+                    // 1. Dibujamos el título de la fecha (Ej. "Hoy", "Ayer")
+                    contenedorChats.innerHTML += `
+                        <div class="mt-4 mb-2">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">${etiqueta}</h3>
+                        </div>
+                    `;
+                    
+                    // 2. Dibujamos todos los chats que pertenecen a esa fecha
+                    gruposFechas[etiqueta].forEach(chat => {
+                        const id = chat.id;
+                        const tituloReal = chat.titulo;
+                        
+                        // APLICAMOS EL RESALTADO (Marca-textos)
+                        const tituloVisual = resaltarTexto(tituloReal, termino);
+
+                        // DIBUJAMOS EL BOTÓN DEL CHAT Y LOS 3 PUNTITOS
+                        contenedorChats.innerHTML += `
+                            <div class="grupo-chat relative flex items-center justify-between w-full hover:bg-slate-100 rounded-lg pr-2 mb-1 transition-colors">
+                                <button onclick="abrirChatHistorial(${id}, '${tituloReal.replace(/'/g, "\\'")}')" class="flex-1 text-left px-3 py-2 text-slate-600 font-medium text-sm flex items-center gap-3 truncate">
+                                    <i class="fa-regular fa-message flex-shrink-0 text-slate-400"></i> 
+                                    <span class="truncate">${tituloVisual}</span>
+                                </button>
+                                
+                                <div class="relative flex-shrink-0">
+                                    <button onclick="toggleMenuChat(${id})" class="text-slate-400 hover:text-zoo-dark w-8 h-8 flex items-center justify-center rounded-full opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity" style="opacity: 1;">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                    
+                                    <div id="menu-chat-${id}" class="hidden absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden z-50">
+                                        <button onclick="renombrarChat(${id}, '${tituloReal.replace(/'/g, "\\'")}')" class="w-full text-left px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-zoo-dark flex items-center gap-2 transition-colors">
+                                            <i class="fa-solid fa-pen w-3"></i> Renombrar
+                                        </button>
+                                        <button onclick="eliminarChat(${id})" class="w-full text-left px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
+                                            <i class="fa-solid fa-trash w-3"></i> Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                contenedorChats.classList.remove('hidden'); 
             } catch (error) {
-                contenedor.innerHTML = '<p class="text-xs text-red-400 text-center mt-4">Error al cargar historial.</p>';
+                if (contenedorLoading) contenedorLoading.classList.add('hidden');
+                if (contenedorChats) {
+                    contenedorChats.innerHTML = '<p class="text-xs text-red-400 text-center mt-4">Error al cargar historial.</p>';
+                    contenedorChats.classList.remove('hidden');
+                }
             }
         }
 
@@ -1036,16 +1147,26 @@
             currentChatId = chat_id;
             chatContainer.innerHTML = ''; // Limpiar chat actual
             
+            // 1. Obtenemos lo que el usuario haya escrito en el buscador en este momento
+            const inputBuscador = document.getElementById('buscador-chats');
+            const termino = inputBuscador ? inputBuscador.value.trim() : '';
+            
             try {
                 const response = await fetch(`${API_URL}/chat/conversacion/${chat_id}`);
                 const data = await response.json();
                 
                 if (response.ok && data.mensajes) {
                     data.mensajes.forEach(msg => {
+                        
+                        // 2. Aplicamos nuestro resaltador (marca-textos) al contenido del mensaje
+                        // Reutilizamos la función resaltarTexto que creamos en el paso anterior
+                        const contenidoVisual = resaltarTexto(msg.content, termino);
+
+                        // 3. Imprimimos el mensaje en pantalla (ya con el resaltado incluido)
                         if (msg.role === 'Usuario') {
-                            agregarMensajeUsuario(msg.content);
+                            agregarMensajeUsuario(contenidoVisual);
                         } else {
-                            agregarMensajeIA(msg.content);
+                            agregarMensajeIA(contenidoVisual);
                         }
                     });
                 }
@@ -1448,7 +1569,7 @@
 
         // --- 7. LÓGICA DE TEMA Y PERSONALIZACIÓN ---
         let currentTema = 'claro';
-        let currentFondo = 'default';
+        let currentFondo = 'none';
         let currentBubbleColor = 'bg-zoo-dark'; 
         let currentAvatar = '';
 
@@ -1514,8 +1635,12 @@
             if (localStorage.getItem('tema_zoopedia') === 'sistema') {
                 if (e.matches) {
                     document.documentElement.classList.add('dark');
+                    // Si el fondo es 'none', sincronizamos a negro
+                    if (currentFondo === 'none') document.getElementById('chat-container').style.background = '#0f172a';
                 } else {
                     document.documentElement.classList.remove('dark');
+                    // Si el fondo es 'none', sincronizamos a blanco
+                    if (currentFondo === 'none') document.getElementById('chat-container').style.background = '#f8fafc';
                 }
             }
         });
@@ -1546,6 +1671,11 @@
             if (aplicarOscuro) html.classList.add('dark');
             else html.classList.remove('dark');
 
+            // --- LA MAGIA ESTÁ AQUÍ: Sincronizamos el fondo si está en modo "Ninguno" ---
+            if (currentFondo === 'none') {
+                document.getElementById('chat-container').style.background = aplicarOscuro ? '#0f172a' : '#f8fafc';
+            }
+
             if (guardar) {
                 localStorage.setItem('tema_zoopedia', modo);
                 mostrarToastPersonalizado(`Tema cambiado a: ${modo}`, "exito");
@@ -1568,7 +1698,13 @@
         function cambiarFondoChat(urlFondo, guardar = true) {
             currentFondo = urlFondo;
             const container = document.getElementById('chat-container');
-            if(urlFondo === 'default') container.style.background = '#f8fafc';
+            
+            // LA NUEVA REGLA: Si es "Ninguno", el fondo lee la mente del tema actual
+            if (urlFondo === 'none') {
+                const esOscuro = document.documentElement.classList.contains('dark');
+                container.style.background = esOscuro ? '#0f172a' : '#f8fafc';
+            }
+            else if(urlFondo === 'default') container.style.background = '#f8fafc';
             else if (urlFondo === 'black') container.style.background = '#0f172a';
             else {
                 container.style.background = `url('${urlFondo}')`;
@@ -2050,6 +2186,107 @@
                 iconoVoz.classList.add('fa-microphone');
             }
             inputField.placeholder = "Pregunta a la Zoopedia...";
+        }
+        let timeoutBusqueda;
+        function ejecutarBusqueda(termino) {
+            clearTimeout(timeoutBusqueda);
+            // Esperamos medio segundo después de la última tecla para buscar
+            timeoutBusqueda = setTimeout(() => {
+                cargarHistorialIA(termino);
+            }, 500);
+        }
+        function toggleMenuChat(id) {
+            // Cerramos cualquier otro menú que esté abierto
+            document.querySelectorAll('[id^="menu-chat-"]').forEach(menu => {
+                if (menu.id !== `menu-chat-${id}`) menu.classList.add('hidden');
+            });
+            // Abrimos el que seleccionamos
+            const menu = document.getElementById(`menu-chat-${id}`);
+            menu.classList.toggle('hidden');
+        }
+
+        // Si el usuario da clic en cualquier otra parte de la pantalla, cerramos los menús
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.grupo-chat')) {
+                document.querySelectorAll('[id^="menu-chat-"]').forEach(menu => menu.classList.add('hidden'));
+            }
+        });
+
+        // --- LÓGICA DE GESTIÓN DE CHATS (Renombrar y Eliminar con Modales) ---
+        let chatAccionId = null;
+        let chatAccionTitulo = "";
+
+        // RENOMBRAR
+        function renombrarChat(id, tituloActual) {
+            chatAccionId = id;
+            chatAccionTitulo = tituloActual;
+            document.getElementById('input-renombrar-chat').value = tituloActual;
+            document.getElementById('modal-renombrar').classList.remove('hidden');
+        }
+
+        function cerrarModalRenombrar() {
+            document.getElementById('modal-renombrar').classList.add('hidden');
+            chatAccionId = null;
+        }
+
+        async function confirmarRenombrar() {
+            const nuevoTitulo = document.getElementById('input-renombrar-chat').value.trim();
+            // Si lo dejó en blanco o no le cambió nada, solo cerramos el modal
+            if (!nuevoTitulo || nuevoTitulo === chatAccionTitulo) {
+                cerrarModalRenombrar();
+                return;
+            }
+            
+            const idToUpdate = chatAccionId;
+            cerrarModalRenombrar(); // Cerramos la ventana para dar sensación de rapidez
+
+            try {
+                const res = await fetch(`${API_URL}/chat/renombrar`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ conversacion_id: idToUpdate, nuevo_titulo: nuevoTitulo })
+                });
+                if (res.ok) {
+                    mostrarToastPersonalizado("Chat renombrado con éxito", "exito");
+                    // Recargamos la lista tomando en cuenta si hay algo en el buscador
+                    const inputBuscador = document.getElementById('buscador-chats');
+                    cargarHistorialIA(inputBuscador ? inputBuscador.value : null); 
+                }
+            } catch(e) {
+                mostrarToastPersonalizado("Error al renombrar", "error");
+            }
+        }
+
+        // ELIMINAR
+        function eliminarChat(id) {
+            chatAccionId = id;
+            document.getElementById('modal-eliminar').classList.remove('hidden');
+        }
+
+        function cerrarModalEliminar() {
+            document.getElementById('modal-eliminar').classList.add('hidden');
+            chatAccionId = null;
+        }
+
+        async function confirmarEliminar() {
+            const idAEliminar = chatAccionId;
+            cerrarModalEliminar();
+
+            try {
+                const res = await fetch(`${API_URL}/chat/eliminar/${idAEliminar}`, { method: 'DELETE' });
+                if (res.ok) {
+                    mostrarToastPersonalizado("Chat eliminado", "exito");
+                    // Si eliminamos el chat que estamos viendo actualmente, limpiamos la pantalla
+                    if (currentChatId === idAEliminar) {
+                        nuevoChat();
+                    } else {
+                        const inputBuscador = document.getElementById('buscador-chats');
+                        cargarHistorialIA(inputBuscador ? inputBuscador.value : null);
+                    }
+                }
+            } catch(e) {
+                mostrarToastPersonalizado("Error al eliminar", "error");
+            }
         }
     </script>
 </body>

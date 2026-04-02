@@ -113,6 +113,10 @@ class MensajeImagenRequest(BaseModel):
     conversacion_id: int
     imagen_base64: str
 
+class RenombrarRequest(BaseModel):
+    conversacion_id: int
+    nuevo_titulo: str
+
 
 # 2. Agrega este nuevo endpoint debajo de @app.post("/chat/mensaje")
 @app.post("/chat/mensaje_con_imagen")
@@ -515,8 +519,14 @@ def crear_conversacion_endpoint(req: NuevaConversacionRequest):
         raise HTTPException(status_code=500, detail=f"Error al crear conversación: {str(e)}")
 
 @app.get("/chat/historial_ia/{user_id}")
-def obtener_historial_ia_endpoint(user_id: int):
-    chats = db_manager.obtener_conversaciones_ia(user_id)
+def obtener_historial_ia_endpoint(user_id: int, q: str = None):
+    # Si el usuario mandó texto en el buscador, usamos la nueva función
+    if q:
+        chats = db_manager.buscar_conversaciones_ia(user_id, q)
+    # Si está vacío, le mandamos su historial normal
+    else:
+        chats = db_manager.obtener_conversaciones_ia(user_id)
+        
     return {"success": True, "conversaciones": chats}
 
 @app.get("/chat/historial_alertas/{user_id}")
@@ -543,9 +553,33 @@ def enviar_mensaje_endpoint(req: ChatRequest):
     db_manager.guardar_mensaje(req.conversacion_id, "Zoopedia", respuesta_ia)
     
     if not historial_previo:
-        db_manager.actualizar_titulo_chat(req.conversacion_id, req.pregunta[:30] + "...")
+        try:
+            # Le pedimos a una IA rápida que lea la pregunta y deduzca un buen título
+            modelo_titulos = genai.GenerativeModel('gemma-3-27b-it')
+            prompt = f"Genera un título muy corto, conciso y sin signos de puntuación (máximo 5 palabras) que resuma la idea principal de esta frase: '{req.pregunta}'"
+            
+            respuesta_titulo = modelo_titulos.generate_content(prompt)
+            # Limpiamos asteriscos, comillas o puntos que la IA le haya puesto al final
+            titulo_inteligente = respuesta_titulo.text.strip().replace('"', '').replace('.', '').replace('*', '')
+            
+            db_manager.actualizar_titulo_chat(req.conversacion_id, titulo_inteligente)
+        except Exception as e:
+            # En caso de que la IA falle, usamos el método tradicional de cortar el texto
+            db_manager.actualizar_titulo_chat(req.conversacion_id, req.pregunta[:30] + "...")
  
     return {"success": True, "respuesta": respuesta_ia}
+
+@app.put("/chat/renombrar")
+def renombrar_chat_endpoint(req: RenombrarRequest):
+    db_manager.actualizar_titulo_chat(req.conversacion_id, req.nuevo_titulo)
+    return {"success": True}
+
+@app.delete("/chat/eliminar/{conversacion_id}")
+def eliminar_chat_endpoint(conversacion_id: int):
+    exito = db_manager.eliminar_conversacion(conversacion_id)
+    if not exito:
+        raise HTTPException(status_code=500, detail="Error al eliminar el chat")
+    return {"success": True}
 
 
 # --- RUTAS DE EMERGENCIAS Y CUIDADOR ---

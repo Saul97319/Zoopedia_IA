@@ -307,6 +307,32 @@ def obtener_conversaciones_ia(user_id):
     conn.close()
     return [{"id": c[0], "titulo": c[1], "fecha": str(c[2])} for c in chats]
 
+def buscar_conversaciones_ia(user_id, termino):
+    """Busca coincidencias en los títulos de los chats y en el contenido de sus mensajes"""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    # Usamos LEFT JOIN para unir el chat con sus mensajes y buscamos en ambos
+    # Usamos ILIKE para que no importe si escriben en mayúsculas o minúsculas
+    query = """
+        SELECT DISTINCT c.id, c.titulo, c.fecha_creacion 
+        FROM conversaciones c
+        LEFT JOIN mensajes m ON c.id = m.conversacion_id
+        WHERE c.usuario_id = %s AND c.tipo = 'ia' 
+        AND (c.titulo ILIKE %s OR m.contenido ILIKE %s)
+        ORDER BY c.fecha_creacion DESC
+    """
+    
+    # Preparamos el término para la búsqueda (Ej. "%leones%")
+    like_termino = f"%{termino}%"
+    c.execute(query, (user_id, like_termino, like_termino))
+    
+    chats = c.fetchall()
+    c.close()
+    conn.close()
+    
+    return [{"id": c[0], "titulo": c[1], "fecha": str(c[2])} for c in chats]
+
 def obtener_alertas_usuario(user_id):
     """Trae exclusivamente los reportes de un visitante"""
     conn = get_connection()
@@ -369,6 +395,25 @@ def actualizar_titulo_chat(conversacion_id, nuevo_titulo):
     conn.commit()
     c.close()
     conn.close()
+
+def eliminar_conversacion(conversacion_id):
+    """Elimina permanentemente una conversación y todos sus mensajes"""
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        # 1. Borramos los mensajes primero (regla de integridad referencial)
+        c.execute("DELETE FROM mensajes WHERE conversacion_id = %s", (conversacion_id,))
+        # 2. Borramos la conversación general
+        c.execute("DELETE FROM conversaciones WHERE id = %s", (conversacion_id,))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error al eliminar chat: {e}")
+        conn.rollback()
+        return False
+    finally:
+        c.close()
+        conn.close()
 # ========================================================
 # NUEVAS FUNCIONES PARA EL FORO (POSTGRESQL)
 # ========================================================
@@ -456,3 +501,19 @@ def obtener_datos_rostro(email):
     c.close()
     conn.close()
     return usuario
+
+def guardar_imagen_chat(mensaje_id, imagen_base64):
+    """Guarda la imagen enviada por el usuario asociada a su mensaje en la BD"""
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("UPDATE mensajes SET imagen_base64 = %s WHERE id = %s", (imagen_base64, mensaje_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Advertencia al guardar imagen en historial: {e}")
+        conn.rollback()
+        return False
+    finally:
+        c.close()
+        conn.close()
