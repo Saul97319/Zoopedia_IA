@@ -268,15 +268,47 @@
                     🚨 <strong class="text-red-600">Advertencia:</strong> El uso falso o abusivo de esta función resultará en la suspensión de tu cuenta.
                 </p>
 
-                <div>
-        <label class="block text-sm font-bold text-slate-700 mb-1">Especie o Zona (Opcional)</label>
-        <select id="alerta-zona" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500">
-            <option value="General">Seleccionar animal...</option>
-            <option value="Leones">Leones</option>
-            <option value="Jirafas">Jirafas</option>
-            <option value="Zona Norte">Zona Norte</option>
-        </select>
-    </div>
+                <div class="flex gap-3">
+                    <div class="w-1/2">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Animal (Opcional)</label>
+                        <select id="alerta-animal" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 text-sm">
+                            <option value="Ninguno">Ninguno</option>
+                            <option value="Elefante">Elefante</option>
+                            <option value="Jirafa">Jirafa</option>
+                            <option value="Rinoceronte">Rinoceronte</option>
+                            <option value="Pinguino">Pingüino</option>
+                            <option value="Hipopotamo">Hipopótamo</option>
+                            <option value="Leon">León</option>
+                            <option value="Tigre">Tigre</option>
+                            <option value="Guacamaya">Guacamaya</option>
+                            <option value="Tiburon">Tiburón</option>
+                            <option value="Gorila">Gorila</option>
+                            <option value="Vibora o serpiente">Víbora o serpiente</option>
+                            <option value="Cocodrilo">Cocodrilo</option>
+                            <option value="Flamingo">Flamingo</option>
+                            <option value="Canguro">Canguro</option>
+                            <option value="Raya">Raya</option>
+                        </select>
+                    </div>
+                    <div class="w-1/2">
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Zona (Opcional)</label>
+                        <select id="alerta-zona" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 text-sm">
+                            <option value="Ninguna">Ninguna</option>
+                            <option value="Safari Masai Mara">Safari Masai Mara</option>
+                            <option value="Herpetario">Herpetario</option>
+                            <option value="Felinos">Felinos</option>
+                            <option value="Primateario">Primateario</option>
+                            <option value="Aviario">Aviario</option>
+                            <option value="Estanque de flamencos rosados">Estanque de flamencos rosados</option>
+                            <option value="Capibaras, jirafas, venados, lories y manatíes">Capibaras, jirafas, venados, lories y manatíes</option>
+                            <option value="Acuario">Acuario</option>
+                            <option value="Pingüinera (Pingüardería)">Pingüinera (Pingüardería)</option>
+                            <option value="Tren Panorámico">Tren Panorámico</option>
+                            <option value="Sky Zoo">Sky Zoo</option>
+                            <option value="Safari nocturno">Safari nocturno (eventos especiales)</option>
+                        </select>
+                    </div>
+                </div>
     <div>
         <label class="block text-sm font-bold text-slate-700 mb-1">Descripción breve</label>
         <textarea id="alerta-descripcion" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 resize-none h-20" placeholder="Ej. Hay un visitante en el área restringida..."></textarea>
@@ -841,9 +873,9 @@
                             if (msg.role === 'Usuario') {
                                 contenedorMensajes.innerHTML += `
                                     <div class="msg-row flex justify-end mb-4">
-                                        <div class="bg-blue-500 text-white px-4 py-2 text-sm rounded-2xl rounded-br-none max-w-[80%] shadow-md">
-                                            ${msg.content}
-                                        </div>
+                                        <div class="bg-blue-500 text-white px-4 py-2 text-sm rounded-2xl rounded-br-none max-w-[80%] shadow-md whitespace-pre-wrap">
+                                        ${msg.content}
+                                    </div>
                                     </div>
                                 `;
                             } else {
@@ -1318,16 +1350,30 @@
             btnEnviarAlerta.classList.add('bg-red-600', 'hover:bg-red-700', 'hover:shadow-lg', 'hover:scale-105', 'cursor-pointer', 'animate-pulse');
             barraProgreso.style.width = '0%'; 
             textoAlerta.innerHTML = `<i class="fa-solid fa-paper-plane text-xl mr-2"></i> ACEPTAR Y ENVIAR ALERTA`;
-            
+
             // CONEXIÓN AL BACKEND
             btnEnviarAlerta.onclick = async () => {
-                const zona = document.getElementById('alerta-zona').value;
-                const descripcion = document.getElementById('alerta-descripcion').value.trim();
+                const animalSeleccionado = document.getElementById('alerta-animal').value;
+                const zonaSeleccionada = document.getElementById('alerta-zona').value;
+                const descripcionUsuario = document.getElementById('alerta-descripcion').value.trim();
 
-                if (!descripcion) {
+                if (!descripcionUsuario) {
                     alert("Por favor, escribe una breve descripción de la emergencia para que el cuidador sepa qué ocurre.");
                     return;
                 }
+
+                // --- NUEVO: Construimos el texto formateado con saltos de línea (\n) ---
+                let mensajeFormateado = "🚨 Asunto: Emergencia\n";
+                if (animalSeleccionado !== "Ninguno") mensajeFormateado += `🐾 Animal: ${animalSeleccionado}\n`;
+                if (zonaSeleccionada !== "Ninguna") mensajeFormateado += `📍 Zona: ${zonaSeleccionada}\n`;
+                
+                // Agregamos la descripción del usuario al final
+                mensajeFormateado += `\n📝 Detalle:\n${descripcionUsuario}`;
+
+                // Mantenemos una variable corta para el registro general de la Base de Datos
+                let zonaCorta = "General";
+                if (zonaSeleccionada !== "Ninguna") zonaCorta = zonaSeleccionada;
+                else if (animalSeleccionado !== "Ninguno") zonaCorta = animalSeleccionado;
 
                 textoAlerta.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xl mr-2"></i> ENVIANDO...`;
                 btnEnviarAlerta.classList.remove('hover:scale-105', 'animate-pulse');
@@ -1338,8 +1384,8 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             user_id: usuarioActual.id,
-                            zona: zona,
-                            descripcion: descripcion
+                            zona: zonaCorta, // Dato corto para la BD
+                            descripcion: mensajeFormateado // El mensaje bonito y formateado para leerse
                         })
                     });
 
@@ -1348,6 +1394,7 @@
                         btnEnviarAlerta.classList.remove('bg-red-600', 'hover:bg-red-700');
                         btnEnviarAlerta.classList.add('bg-green-600');
                         
+                        document.getElementById('alerta-animal').selectedIndex = 0;
                         document.getElementById('alerta-zona').selectedIndex = 0;
                         document.getElementById('alerta-descripcion').value = '';
 
