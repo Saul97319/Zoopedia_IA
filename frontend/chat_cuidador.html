@@ -279,6 +279,47 @@
         // --- 1. CONFIGURACIÓN Y ESTADO ---
         const API_URL = "http://127.0.0.1:8000";
         let usuarioActual = null;
+
+        // ========================================================
+        // UTILIDADES DE RESALTADO DE TEXTO (SEARCH HIGHLIGHT)
+        // ========================================================
+
+        // 1. Función principal: Resalta texto simple (usado en chats de usuario)
+        function resaltarTextoSimple(texto, query) {
+            if (!query || query.trim() === "" || !texto) return texto;
+            const term = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escapar caracteres especiales de Regex
+            const regex = new RegExp(`(${term})`, "gi"); // Busqueda global insensible a mayúsculas
+            const markStart = `<mark class="bg-blue-200 text-blue-800 rounded px-0.5 font-bold shadow-sm">`;
+            const markEnd = `</mark>`;
+            return texto.replace(regex, `${markStart}$1${markEnd}`);
+        }
+
+        // 2. Función avanzada: Recorre nodos HTML y resalta solo texto visible (usado en chats de IA con Markdown)
+        // Esto previene que resaltemos coincidencias dentro de atributos HTML (como href o src)
+        function resaltarNodosTextoVisibles(element, query) {
+            if (!element || !query) return;
+            const term = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${term})`, "gi");
+            const markStart = `<mark class="bg-blue-200 text-blue-800 rounded px-0.5 font-bold shadow-sm">`;
+            const markEnd = `</mark>`;
+
+            element.childNodes.forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    // Si es un nodo de texto puro, aplicamos el resaltado
+                    const text = node.textContent;
+                    if (regex.test(text)) {
+                        const highlightedText = text.replace(regex, `${markStart}$1${markEnd}`);
+                        const span = document.createElement('span'); // Wrapper span para insertar HTML
+                        span.innerHTML = highlightedText;
+                        node.parentNode.replaceChild(span, node); // Reemplazamos el nodo de texto original
+                    }
+                } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'CODE' && node.tagName !== 'PRE') {
+                    // Si es otro elemento, llamamos recursivamente, pero EXCLUIMOS bloques de código
+                    resaltarNodosTextoVisibles(node, query);
+                }
+            });
+        }
+
         let alertasAgrupadas = {}; // Aquí guardaremos los datos agrupados por fecha
         let conversacionSeleccionada = null; // Agrega esto debajo de let alertasAgrupadas = {};
         let intervaloCuidador = null;
