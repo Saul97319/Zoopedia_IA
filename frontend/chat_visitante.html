@@ -120,7 +120,7 @@
             <!-- (2) Barra de Búsqueda -->
             <div class="mt-4 relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400"></i>
-                <input type="text" placeholder="Buscar chats..." class="w-full bg-slate-100 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zoo focus:bg-white transition-all">
+                <input type="text" id="input-buscador-chats" oninput="debounceBuscarChats()" placeholder="Buscar en títulos y mensajes..." class="w-full bg-slate-100 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zoo focus:bg-white transition-all">
             </div>
         </div>
 
@@ -409,6 +409,42 @@
                         </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-renombrar" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative">
+            <button onclick="cerrarModalRenombrar()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2"><i class="fa-solid fa-pen-to-square text-blue-500 mr-2"></i> Renombrar Chat</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nuevo nombre</label>
+                    <input type="text" id="input-nuevo-nombre" class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition-all text-slate-700" placeholder="Ej. Duda sobre pingüinos">
+                </div>
+                <button onclick="guardarRenombreChat()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-bold transition-colors shadow-md flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Nombre
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-eliminar" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <i class="fa-solid fa-triangle-exclamation text-3xl text-red-600"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-800 mb-2">¿Eliminar esta conversación?</h2>
+            <p class="text-sm text-slate-500 mb-6">Esta acción no se puede deshacer. Todos los mensajes se perderán permanentemente.</p>
+            <div class="flex gap-3">
+                <button onclick="cerrarModalEliminar()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmarEliminarChat()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-colors shadow-md">
+                    Sí, eliminar
+                </button>
             </div>
         </div>
     </div>
@@ -704,6 +740,12 @@
         const usuarioActual = JSON.parse(usuarioStr);
         let currentChatId = null;
 
+        // --- VARIABLES GLOBALES AHORA SÍ PROTEGIDAS ---
+        let currentTema = 'claro';
+        let currentFondo = 'default';
+        let currentBubbleColor = 'bg-zoo-dark'; 
+        let currentAvatar = '';
+
         // --- 2. Control de Interfaz (Sidebar y Perfil) ---
         const sidebar = document.getElementById('sidebar');
         function toggleSidebar() {
@@ -946,24 +988,63 @@
             return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         }
 
+        // --- FUNCIONES DE BÚSQUEDA Y RESALTADO FALTANTES ---
+        function resaltarTextoSimple(textoOriginal, terminoBusqueda) {
+            if (!terminoBusqueda || terminoBusqueda === "") return textoOriginal;
+            // Escapa caracteres especiales para que no rompan la búsqueda
+            const terminoSeguro = terminoBusqueda.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${terminoSeguro})`, 'gi');
+            
+            // Reemplaza envolviendo el texto en la etiqueta mark con diseño Tailwind
+            return textoOriginal.replace(regex, '<mark class="bg-blue-200 text-blue-800 rounded px-1 shadow-sm font-bold">$1</mark>');
+        }
+
+        function resaltarNodosTextoVisibles(elemento, terminoBusqueda) {
+            if (!terminoBusqueda || terminoBusqueda === "") return;
+            const terminoSeguro = terminoBusqueda.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${terminoSeguro})`, 'gi');
+
+            // TreeWalker recorre solo los nodos de texto sin romper la estructura HTML (como los <br> o <strong>)
+            const walker = document.createTreeWalker(elemento, NodeFilter.SHOW_TEXT, null, false);
+            let nodos = [];
+            while(walker.nextNode()) {
+                nodos.push(walker.currentNode);
+            }
+
+            nodos.forEach(nodo => {
+                if (nodo.parentNode.nodeName === 'MARK') return; // Evita resaltar algo que ya está resaltado
+                const texto = nodo.nodeValue;
+                if (regex.test(texto)) {
+                    const span = document.createElement('span');
+                    span.innerHTML = texto.replace(regex, '<mark class="bg-blue-200 text-blue-800 rounded px-1 shadow-sm font-bold">$1</mark>');
+                    nodo.parentNode.replaceChild(span, nodo);
+                }
+            });
+        }
+
         // --- FUNCIÓN ACTUALIZADA: AGREGAR MENSAJE DE USUARIO ---
         function agregarMensajeUsuario(texto, imagenBase64 = null) {
+            // Protección absoluta contra nulos o undefined
+            texto = texto || ""; 
+            
             const time = getCurrentTime();
             
             const avatarHtml = currentAvatar 
                 ? `<img src="${currentAvatar}" class="w-full h-full object-cover rounded-full" alt="Perfil">`
                 : usuarioActual.nombre.substring(0,2).toUpperCase();
 
-            // Image HTML - styled for outside the bubble
             const imagenHtml = imagenBase64 
                 ? `<div class="mb-4 text-right">
                        <img src="${imagenBase64}" class="inline-block w-48 h-48 object-cover rounded-xl border-4 border-white shadow-lg cursor-pointer transition-transform hover:scale-105" onclick="window.open('${imagenBase64}', '_blank')">
                    </div>` 
                 : '';
 
-            const textoHtml = texto ? texto.replace(/\n/g, '<br>') : '';
+            const inputBuscador = document.getElementById('input-buscador-chats');
+            const queryBusqueda = inputBuscador ? inputBuscador.value.trim() : "";
+            const textoResaltado = resaltarTextoSimple(texto, queryBusqueda);
 
-            // User message bubble content (just the text and time now)
+            const textoHtml = textoResaltado ? textoResaltado.replace(/\n/g, '<br>') : '';
+
             const bubbleContent = `
                 <div class="${currentBubbleColor} burbuja-usuario text-white p-4 rounded-2xl rounded-br-none shadow-md max-w-[85%] sm:max-w-md leading-relaxed relative transition-colors duration-300">
                     ${textoHtml}
@@ -971,7 +1052,6 @@
                 </div>
             `;
 
-            // Final HTML structure: flex container, with optional image, then the text bubble, then the avatar
             const msgHTML = `
                 <div class="flex items-end gap-3 mb-6 justify-end animate-fade-in-up">
                     <div class="flex flex-col items-end flex-grow max-w-[calc(100%-3rem)]">
@@ -1006,22 +1086,26 @@
         }
 
         function agregarMensajeIA(texto, typingId = null) {
+            // Protección contra nulos
+            texto = texto || "";
+            
+            // Verificación segura antes de intentar eliminar el HTML
             if (typingId) document.getElementById(typingId).remove();
+            
             const time = getCurrentTime();
             
-            // 1. TRADUCCIÓN DE MARKDOWN A HTML
-            // Reemplazamos los dobles asteriscos por la etiqueta <strong> de HTML
-            let textoFormateado = texto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            
-            // 2. Reemplazamos los saltos de línea por etiquetas <br> para los párrafos
+            // Forzamos a que sea un String antes de hacer replace
+            let textoFormateado = String(texto).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             textoFormateado = textoFormateado.replace(/\n/g, '<br>');
+
+            const msgId = 'ia-msg-' + Date.now() + Math.floor(Math.random() * 1000);
 
             const msgHTML = `
                 <div class="flex items-start gap-4 mb-8 animate-fade-in-up w-full">
                     <div class="w-10 h-10 rounded-full bg-zoo text-white flex items-center justify-center flex-shrink-0 shadow-md mt-1">
                         <i class="fa-solid fa-hippo"></i>
                     </div>
-                    <div class="flex-1 text-slate-700 leading-relaxed min-w-0">
+                    <div id="${msgId}" class="flex-1 text-slate-700 leading-relaxed min-w-0">
                         ${textoFormateado}
                         <div class="text-[10px] text-slate-400 mt-2 font-medium">${time}</div>
                     </div>
@@ -1029,69 +1113,158 @@
             `;
             chatContainer.insertAdjacentHTML('beforeend', msgHTML);
             chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            const inputBuscador = document.getElementById('input-buscador-chats');
+            const queryBusqueda = inputBuscador ? inputBuscador.value.trim() : "";
+            
+            if (queryBusqueda) {
+                const messageBodyIA = document.getElementById(msgId);
+                if (messageBodyIA) resaltarNodosTextoVisibles(messageBodyIA, queryBusqueda);
+            }
         }
         // --- LÓGICA DEL HISTORIAL LATERAL DINÁMICO ---
-        async function cargarHistorialIA() {
+        let timeoutBuscador = null;
+
+        function debounceBuscarChats() {
+            clearTimeout(timeoutBuscador);
+            // Esperamos 500ms después de que el usuario deje de escribir para consultar al servidor
+            timeoutBuscador = setTimeout(() => {
+                const query = document.getElementById('input-buscador-chats').value.trim();
+                cargarHistorialIA(query);
+            }, 500); 
+        }
+
+        async function cargarHistorialIA(busqueda = "") {
             const contenedorLoading = document.getElementById('historial-loading');
             const contenedorChats = document.getElementById('historial-chats');
             
             try {
-                // Mostrar el mensaje de carga al inicio
                 if (contenedorLoading) contenedorLoading.classList.remove('hidden');
                 if (contenedorChats) contenedorChats.classList.add('hidden');
 
-                const res = await fetch(`${API_URL}/chat/historial_ia/${usuarioActual.id}`);
+                let url = `${API_URL}/chat/historial_ia/${usuarioActual.id}`;
+                if (busqueda !== "") {
+                    url += `?q=${encodeURIComponent(busqueda)}`;
+                }
+
+                const res = await fetch(url);
                 const data = await res.json();
                 const chatsIA = data.conversaciones;
 
-                // Ocultar el mensaje de carga inmediatamente al recibir la respuesta
                 if (contenedorLoading) contenedorLoading.classList.add('hidden');
-                
-                contenedorChats.innerHTML = ''; // Limpiar el contenedor real
+                contenedorChats.innerHTML = ''; 
 
                 if (!chatsIA || chatsIA.length === 0) {
-                    contenedorChats.innerHTML = '<p class="text-xs text-slate-400 text-center mt-4">No hay conversaciones previas.</p>';
-                    contenedorChats.classList.remove('hidden'); // Mostrar el contenedor con el mensaje "No hay..."
+                    const msj = busqueda !== "" 
+                        ? `<p class="text-xs text-slate-400 text-center mt-4">No se encontraron resultados para "<span class="font-bold text-slate-600">${busqueda}</span>".</p>`
+                        : `<p class="text-xs text-slate-400 text-center mt-4">No hay conversaciones previas.</p>`;
+                        
+                    contenedorChats.innerHTML = msj;
+                    contenedorChats.classList.remove('hidden'); 
                     return;
                 }
 
-                // 1. Agrupar los chats por fechas
-                const gruposFechas = {};
-                const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-                const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1);
-
-                chatsIA.forEach(chat => {
-                    const fechaParte = chat.fecha.split(' ')[0]; 
-                    const [year, month, day] = fechaParte.split('-');
-                    const fechaChat = new Date(year, month - 1, day); fechaChat.setHours(0,0,0,0);
-
-                    let etiqueta = (fechaChat.getTime() === hoy.getTime()) ? "Hoy" :
-                                    (fechaChat.getTime() === ayer.getTime()) ? "Ayer" :
-                                    `${day}/${month}`;
-
-                    if (!gruposFechas[etiqueta]) gruposFechas[etiqueta] = [];
-                    gruposFechas[etiqueta].push(chat);
-                });
-
-                // 2. Renderizar el historial agrupado en el menú lateral
-                for (const etiqueta in gruposFechas) {
-                    contenedorChats.innerHTML += `
+                // --- NUEVA LÓGICA DE RENDERIZADO (Búsqueda vs Normal) ---
+                if (busqueda !== "") {
+                    // MODO BÚSQUEDA: Lista plana y en primer plano
+                    contenedorChats.innerHTML = `
                         <div class="mt-4 mb-2">
-                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">${etiqueta}</h3>
+                            <h3 class="text-xs font-bold text-blue-500 uppercase tracking-wider pl-1"><i class="fa-solid fa-filter"></i> Resultados</h3>
                         </div>
                     `;
-                    gruposFechas[etiqueta].forEach(chat => {
+                    
+                    chatsIA.forEach(chat => {
                         const id = chat.id;
-                        const titulo = chat.titulo;
+                        const tituloOriginal = chat.titulo;
+                        const tituloSafe = tituloOriginal.replace(/'/g, "\\'");
+                        
+                        // Lógica de resaltado tipo marcatextos azul
+                        let tituloRender = tituloOriginal;
+                        // Preparamos la palabra para buscarla sin importar mayúsculas/minúsculas
+                        const regex = new RegExp(`(${busqueda.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
+                        
+                        if (regex.test(tituloOriginal)) {
+                            // Si encontró la palabra en el título, la resalta
+                            tituloRender = tituloOriginal.replace(regex, `<mark class="bg-blue-200 text-blue-800 rounded px-0.5 font-bold shadow-sm">$1</mark>`);
+                        } else {
+                            // Si NO está en el título, significa que está escondida dentro del mensaje
+                            tituloRender = `${tituloOriginal} <span class="ml-1 text-[9px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-200 align-middle whitespace-nowrap"><i class="fa-solid fa-message"></i> En mensaje</span>`;
+                        }
+
                         contenedorChats.innerHTML += `
-                            <button onclick="abrirChatHistorial(${id}, '${titulo.replace(/'/g, "\\'")}')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3 truncate mb-1">
-                                <i class="fa-regular fa-message flex-shrink-0 text-slate-400"></i> 
-                                <span class="truncate">${titulo}</span>
-                            </button>
+                            <div class="relative group flex items-center mb-1">
+                                <button onclick="abrirChatHistorial(${id}, '${tituloSafe}')" class="flex-1 text-left px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-slate-700 font-medium text-sm transition-colors flex items-center gap-3 truncate pr-8 border border-blue-100/50">
+                                    <i class="fa-solid fa-magnifying-glass flex-shrink-0 text-blue-400"></i> 
+                                    <span class="truncate">${tituloRender}</span>
+                                </button>
+                                
+                                <button onclick="toggleOpcionesChat(event, ${id})" class="absolute right-1 p-2 text-slate-400 hover:text-zoo opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-slate-200">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                
+                                <div id="dropdown-chat-${id}" class="dropdown-opciones-chat hidden absolute right-2 top-8 w-36 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden text-xs transform origin-top-right transition-all">
+                                    <button onclick="abrirModalRenombrar(${id}, '${tituloSafe}')" class="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-slate-700 flex items-center gap-2 font-bold"><i class="fa-solid fa-pen w-4 text-blue-500"></i> Renombrar</button>
+                                    <div class="h-px bg-slate-100"></div>
+                                    <button onclick="abrirModalEliminar(${id})" class="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-600 flex items-center gap-2 font-bold"><i class="fa-solid fa-trash w-4"></i> Eliminar</button>
+                                </div>
+                            </div>
                         `;
                     });
+
+                } else {
+                    // MODO NORMAL: Agrupado por fechas (Restaurado cuando borras el buscador)
+                    const gruposFechas = {};
+                    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+                    const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1);
+
+                    chatsIA.forEach(chat => {
+                        const fechaParte = chat.fecha.split(' ')[0]; 
+                        const [year, month, day] = fechaParte.split('-');
+                        const fechaChat = new Date(year, month - 1, day); fechaChat.setHours(0,0,0,0);
+
+                        let etiqueta = (fechaChat.getTime() === hoy.getTime()) ? "Hoy" :
+                                        (fechaChat.getTime() === ayer.getTime()) ? "Ayer" :
+                                        `${day}/${month}`;
+
+                        if (!gruposFechas[etiqueta]) gruposFechas[etiqueta] = [];
+                        gruposFechas[etiqueta].push(chat);
+                    });
+
+                    for (const etiqueta in gruposFechas) {
+                        contenedorChats.innerHTML += `
+                            <div class="mt-4 mb-2">
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">${etiqueta}</h3>
+                            </div>
+                        `;
+                        gruposFechas[etiqueta].forEach(chat => {
+                            const id = chat.id;
+                            const tituloOriginal = chat.titulo;
+                            const tituloSafe = tituloOriginal.replace(/'/g, "\\'");
+                            
+                            contenedorChats.innerHTML += `
+                                <div class="relative group flex items-center mb-1">
+                                    <button onclick="abrirChatHistorial(${id}, '${tituloSafe}')" class="flex-1 text-left px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 font-medium text-sm transition-colors flex items-center gap-3 truncate pr-8">
+                                        <i class="fa-regular fa-message flex-shrink-0 text-slate-400"></i> 
+                                        <span class="truncate">${tituloOriginal}</span>
+                                    </button>
+                                    
+                                    <button onclick="toggleOpcionesChat(event, ${id})" class="absolute right-1 p-2 text-slate-400 hover:text-zoo opacity-0 group-hover:opacity-100 transition-opacity rounded-full hover:bg-slate-200">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                    
+                                    <div id="dropdown-chat-${id}" class="dropdown-opciones-chat hidden absolute right-2 top-8 w-36 bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden text-xs transform origin-top-right transition-all">
+                                        <button onclick="abrirModalRenombrar(${id}, '${tituloSafe}')" class="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-slate-700 flex items-center gap-2 font-bold"><i class="fa-solid fa-pen w-4 text-blue-500"></i> Renombrar</button>
+                                        <div class="h-px bg-slate-100"></div>
+                                        <button onclick="abrirModalEliminar(${id})" class="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-600 flex items-center gap-2 font-bold"><i class="fa-solid fa-trash w-4"></i> Eliminar</button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
                 }
-                contenedorChats.classList.remove('hidden'); // Mostrar los chats cargados
+                
+                contenedorChats.classList.remove('hidden'); 
+
             } catch (error) {
                 if (contenedorLoading) contenedorLoading.classList.add('hidden');
                 if (contenedorChats) {
@@ -1119,10 +1292,11 @@
                     });
                 }
             } catch(e) {
+                // ESTA LÍNEA ES CLAVE: Te mostrará el error real en la consola (F12)
+                console.error("Detalle técnico del error al cargar historial:", e);
                 mostrarToastPersonalizado("Error al cargar la conversación", "error");
             }
             
-            // Cerrar menú lateral en móviles al elegir un chat
             if(window.innerWidth < 768) toggleSidebar();
         }
 
@@ -1542,12 +1716,6 @@
                 modalConfig.classList.remove('hidden');
             }
         }
-
-        // --- 7. LÓGICA DE TEMA Y PERSONALIZACIÓN ---
-        let currentTema = 'claro';
-        let currentFondo = 'default';
-        let currentBubbleColor = 'bg-zoo-dark'; 
-        let currentAvatar = '';
 
         const modalTema = document.getElementById('modal-tema');
 
@@ -2148,6 +2316,101 @@
             }
             inputField.placeholder = "Pregunta a la Zoopedia...";
         }
+
+        // --- LÓGICA DE OPCIONES DE CHAT (RENOMBRAR / ELIMINAR) ---
+        let chatEnEdicionId = null;
+
+        // Abrir/cerrar menú de 3 puntitos
+        function toggleOpcionesChat(event, chatId) {
+            event.stopPropagation(); // Evita que se abra el chat
+            
+            // Cerrar todos los demás dropdowns abiertos
+            document.querySelectorAll('.dropdown-opciones-chat').forEach(el => {
+                if(el.id !== `dropdown-chat-${chatId}`) el.classList.add('hidden');
+            });
+
+            const dropdown = document.getElementById(`dropdown-chat-${chatId}`);
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Escuchador global para cerrar dropdowns si se hace clic afuera
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-opciones-chat').forEach(el => el.classList.add('hidden'));
+        });
+
+        // -- Renombrar --
+        function abrirModalRenombrar(chatId, tituloActual) {
+            chatEnEdicionId = chatId;
+            document.getElementById('input-nuevo-nombre').value = tituloActual;
+            document.getElementById('modal-renombrar').classList.remove('hidden');
+            setTimeout(() => document.getElementById('input-nuevo-nombre').focus(), 100);
+        }
+
+        function cerrarModalRenombrar() {
+            document.getElementById('modal-renombrar').classList.add('hidden');
+            chatEnEdicionId = null;
+        }
+
+        async function guardarRenombreChat() {
+            const nuevoTitulo = document.getElementById('input-nuevo-nombre').value.trim();
+            if(!nuevoTitulo || !chatEnEdicionId) return;
+
+            try {
+                const response = await fetch(`${API_URL}/chat/conversacion/${chatEnEdicionId}/titulo`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nuevo_titulo: nuevoTitulo })
+                });
+
+                if(response.ok) {
+                    mostrarToastPersonalizado("Nombre de chat actualizado", "exito");
+                    cerrarModalRenombrar();
+                    cargarHistorialIA(); // Refrescar menú lateral
+                } else {
+                    mostrarToastPersonalizado("Error al renombrar el chat", "error");
+                }
+            } catch(e) {
+                mostrarToastPersonalizado("Error de red", "error");
+            }
+        }
+
+        // -- Eliminar --
+        function abrirModalEliminar(chatId) {
+            chatEnEdicionId = chatId;
+            document.getElementById('modal-eliminar').classList.remove('hidden');
+        }
+
+        function cerrarModalEliminar() {
+            document.getElementById('modal-eliminar').classList.add('hidden');
+            chatEnEdicionId = null;
+        }
+
+        async function confirmarEliminarChat() {
+            if(!chatEnEdicionId) return;
+
+            try {
+                const response = await fetch(`${API_URL}/chat/conversacion/${chatEnEdicionId}`, {
+                    method: 'DELETE'
+                });
+
+                if(response.ok) {
+                    mostrarToastPersonalizado("Conversación eliminada", "exito");
+                    cerrarModalEliminar();
+                    
+                    // Si eliminamos el chat que estamos viendo actualmente, limpiamos la pantalla
+                    if(currentChatId === chatEnEdicionId) {
+                        nuevoChat();
+                    } else {
+                        cargarHistorialIA(); // Solo refrescar la lista
+                    }
+                } else {
+                    mostrarToastPersonalizado("Error al eliminar", "error");
+                }
+            } catch(e) {
+                mostrarToastPersonalizado("Error de red", "error");
+            }
+        }
+
     </script>
 </body>
 </html>

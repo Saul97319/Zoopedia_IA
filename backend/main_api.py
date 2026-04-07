@@ -20,6 +20,8 @@ import google.generativeai as genai
 import io
 from PIL import Image
 from dotenv import load_dotenv
+from typing import Optional
+import psycopg2.extras
 
 # 1. Inicializar la app FastAPI
 app = FastAPI(title="Zoopedia API")
@@ -524,8 +526,9 @@ def crear_conversacion_endpoint(req: NuevaConversacionRequest):
         raise HTTPException(status_code=500, detail=f"Error al crear conversación: {str(e)}")
 
 @app.get("/chat/historial_ia/{user_id}")
-def obtener_historial_ia_endpoint(user_id: int):
-    chats = db_manager.obtener_conversaciones_ia(user_id)
+def obtener_historial_ia_endpoint(user_id: int, q: Optional[str] = None):
+    # Le pasamos la palabra clave 'q' a nuestra función de la base de datos
+    chats = db_manager.obtener_conversaciones_ia(user_id, q)
     return {"success": True, "conversaciones": chats}
 
 @app.get("/chat/historial_alertas/{user_id}")
@@ -556,6 +559,36 @@ def enviar_mensaje_endpoint(req: ChatRequest):
  
     return {"success": True, "respuesta": respuesta_ia}
 
+# --- MODELO NUEVO (Agrégalo junto a tus otras clases Pydantic arriba) ---
+class RenombrarChatRequest(BaseModel):
+    nuevo_titulo: str
+
+# --- NUEVOS ENDPOINTS (Agrégalos debajo de @app.post("/chat/nueva")) ---
+
+@app.put("/chat/conversacion/{conversacion_id}/titulo")
+def actualizar_titulo_chat_endpoint(conversacion_id: int, req: RenombrarChatRequest):
+    try:
+        # Aquí asumimos que ya tienes esta función en db_manager.py porque
+        # se utiliza para auto-renombrar los chats al hacer la primer pregunta
+        exito = db_manager.actualizar_titulo_chat(conversacion_id, req.nuevo_titulo)
+        if not exito:
+            raise HTTPException(status_code=404, detail="Chat no encontrado")
+        return {"success": True, "mensaje": "Título actualizado"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+@app.delete("/chat/conversacion/{conversacion_id}")
+def eliminar_chat_endpoint(conversacion_id: int):
+    try:
+        # Asegúrate de programar esta función en utils/db_manager.py
+        # Debe hacer un DELETE FROM conversaciones WHERE id = conversacion_id
+        # (Y sus mensajes asociados en cascada)
+        exito = db_manager.eliminar_conversacion(conversacion_id) 
+        if not exito:
+            raise HTTPException(status_code=404, detail="Chat no encontrado")
+        return {"success": True, "mensaje": "Conversación eliminada"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al eliminar: {str(e)}")
 
 # --- RUTAS DE EMERGENCIAS Y CUIDADOR ---
 @app.get("/cuidador/alertas")

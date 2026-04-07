@@ -297,15 +297,52 @@ def crear_nueva_conversacion(user_id, titulo="Nueva conversación", tipo="ia"):
     conn.close()
     return chat_id
 
-def obtener_conversaciones_ia(user_id):
-    """Trae exclusivamente el historial con la IA"""
+def obtener_conversaciones_ia(user_id, busqueda=None):
+    """Obtiene el historial de chats del usuario. Si hay búsqueda, filtra por título y contenido del mensaje."""
     conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT id, titulo, fecha_creacion FROM conversaciones WHERE usuario_id = %s AND tipo = 'ia' ORDER BY id DESC", (user_id,))
-    chats = c.fetchall()
-    c.close()
-    conn.close()
-    return [{"id": c[0], "titulo": c[1], "fecha": str(c[2])} for c in chats]
+    # Usamos RealDictCursor para que el resultado sea un diccionario en lugar de una tupla
+    c = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) 
+    
+    try:
+        if busqueda:
+            # Los comodines % permiten buscar la palabra en cualquier parte del texto
+            termino = f"%{busqueda}%"
+            # Usamos fecha_creacion, usuario_id y contenido
+            c.execute("""
+                SELECT DISTINCT c.id, c.titulo, c.fecha_creacion 
+                FROM conversaciones c
+                LEFT JOIN mensajes m ON c.id = m.conversacion_id
+                WHERE c.usuario_id = %s AND c.tipo = 'ia'
+                AND (c.titulo ILIKE %s OR m.contenido ILIKE %s)
+                ORDER BY c.fecha_creacion DESC
+            """, (user_id, termino, termino))
+        else:
+            # Comportamiento normal si no hay búsqueda
+            c.execute("""
+                SELECT id, titulo, fecha_creacion 
+                FROM conversaciones 
+                WHERE usuario_id = %s AND tipo = 'ia'
+                ORDER BY fecha_creacion DESC
+            """, (user_id,))
+            
+        resultados = c.fetchall()
+        
+        # Formateamos las fechas y pasamos la clave "fecha" que espera el frontend
+        chats_formateados = []
+        for fila in resultados:
+            chats_formateados.append({
+                "id": fila["id"],
+                "titulo": fila["titulo"],
+                "fecha": fila["fecha_creacion"].strftime('%Y-%m-%d %H:%M') if hasattr(fila["fecha_creacion"], 'strftime') else str(fila["fecha_creacion"])
+            })
+            
+        return chats_formateados
+    except Exception as e:
+        print(f"Error al obtener conversaciones IA: {e}")
+        return []
+    finally:
+        c.close()
+        conn.close()
 
 def obtener_alertas_usuario(user_id):
     """Trae exclusivamente los reportes de un visitante"""
@@ -382,12 +419,44 @@ def guardar_imagen_chat(mensaje_id, imagen_base64):
         conn.close()
 
 def actualizar_titulo_chat(conversacion_id, nuevo_titulo):
+    """Actualiza el título de un chat específico en la base de datos."""
     conn = get_connection()
     c = conn.cursor()
-    c.execute("UPDATE conversaciones SET titulo = %s WHERE id = %s", (nuevo_titulo, conversacion_id))
-    conn.commit()
-    c.close()
-    conn.close()
+    try:
+        # Actualizamos solo la fila que coincida con el ID del chat
+        c.execute("UPDATE conversaciones SET titulo = %s WHERE id = %s", (nuevo_titulo, conversacion_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error al actualizar el título del chat: {e}")
+        conn.rollback()
+        return False
+    finally:
+        c.close()
+        conn.close()
+
+def eliminar_conversacion(conversacion_id):
+    """Elimina permanentemente una conversación y todos sus mensajes."""
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        # 1. Primero debemos borrar los mensajes (y sus imágenes) vinculados a este chat
+        # para que la base de datos no arroje un error de llave foránea (Foreign Key)
+        c.execute("DELETE FROM imagenes_chat WHERE mensaje_id IN (SELECT id FROM mensajes WHERE conversacion_id = %s)", (conversacion_id,))
+        c.execute("DELETE FROM mensajes WHERE conversacion_id = %s", (conversacion_id,))
+        
+        # 2. Luego borramos la conversación principal
+        c.execute("DELETE FROM conversaciones WHERE id = %s", (conversacion_id,))
+        
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error al eliminar el chat: {e}")
+        conn.rollback()
+        return False
+    finally:
+        c.close()
+        conn.close()
 # ========================================================
 # NUEVAS FUNCIONES PARA EL FORO (POSTGRESQL)
 # ========================================================
