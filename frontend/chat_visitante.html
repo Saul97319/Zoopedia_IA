@@ -562,7 +562,8 @@
                 
                 <div>
                     <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-solid fa-circle-user mr-1 text-zoo"></i> Foto de Perfil</h3>
-                    <div class="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
+                    
+                    <div id="contenedor-avatares-rapidos" class="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
                         <input type="file" id="input-foto-local" accept="image/*" class="hidden">
                         <button onclick="triggerSubirFoto()" class="w-14 h-14 flex-shrink-0 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:text-zoo hover:border-zoo hover:bg-zoo-light transition-colors" title="Subir desde PC">
                             <i class="fa-solid fa-upload text-lg"></i>
@@ -600,12 +601,27 @@
             </div>
         </div>
     </div>
+    <div id="modal-eliminar-avatar" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden transform transition-all p-6 relative text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <i class="fa-solid fa-trash-can text-3xl text-red-600"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-800 mb-2">¿Eliminar este avatar?</h2>
+            <p class="text-sm text-slate-500 mb-6">Esta imagen se borrará de tu colección personalizada. Esta acción no se puede deshacer.</p>
+            <div class="flex gap-3">
+                <button onclick="cerrarModalEliminarAvatar()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmarEliminarAvatar()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-colors shadow-md">
+                    Sí, eliminar
+                </button>
+            </div>
+        </div>
+    </div>
 
                 <div>
                     <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-regular fa-image mr-1 text-zoo"></i> Fondo del Chat</h3>
-                    <div class="grid grid-cols-4 gap-2">
-                        <button onclick="cambiarFondoChat('default')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-500 hover:border-zoo transition-colors">Blanco</button>
-                        <button onclick="cambiarFondoChat('black')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-900 flex items-center justify-center text-xs font-bold text-white hover:border-zoo transition-colors">Negro</button>
+                    <div class="grid grid-cols-3 gap-2"> <button onclick="cambiarFondoChat('ninguno')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 hover:border-zoo hover:bg-slate-200 transition-colors shadow-sm">Ninguno</button>
                         <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg');"></button>
                         <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg');"></button>
                     </div>
@@ -615,12 +631,18 @@
                     <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-solid fa-comment-dots mr-1 text-zoo"></i> Estilo de Burbuja</h3>
                     <div class="flex flex-wrap gap-3">
                         <button onclick="cambiarColorBurbuja('bg-zoo-dark')" class="w-10 h-10 rounded-full bg-zoo-dark border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Verde Zoopedia"></button>
+
+                        <button onclick="cambiarColorBurbuja('bg-red-500')" class="w-10 h-10 rounded-full bg-red-500 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Rojo"></button>
+                        
+                        <button onclick="cambiarColorBurbuja('bg-yellow-500')" class="w-10 h-10 rounded-full bg-yellow-500 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Amarillo"></button>
                         
                         <button onclick="cambiarColorBurbuja('bg-blue-500')" class="w-10 h-10 rounded-full bg-blue-500 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Azul"></button>
                         
                         <button onclick="cambiarColorBurbuja('bg-purple-500')" class="w-10 h-10 rounded-full bg-purple-500 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Morado"></button>
                         
                         <button onclick="cambiarColorBurbuja('bg-orange-500')" class="w-10 h-10 rounded-full bg-orange-500 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Naranja"></button>
+
+                        <button onclick="cambiarColorBurbuja('bg-amber-800')" class="w-10 h-10 rounded-full bg-amber-800 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Marrón"></button>
                         
                         <button onclick="cambiarColorBurbuja('bg-slate-800')" class="w-10 h-10 rounded-full bg-slate-800 border-2 border-transparent hover:scale-110 transition-transform shadow-sm cursor-pointer" title="Gris Oscuro"></button>
                     </div>
@@ -1429,6 +1451,7 @@
         window.onload = async () => {
             nuevoChat();
             cargarHistorialIA();
+            cargarAvataresPersonalizados();
             document.querySelector('#profile-menu p.font-bold').textContent = usuarioActual.nombre;
             document.getElementById('profile-email').textContent = usuarioActual.correo || usuarioActual.email || 'Correo no disponible';
             document.getElementById('profile-btn').textContent = usuarioActual.nombre.substring(0, 2).toUpperCase();
@@ -1811,6 +1834,11 @@
             if (aplicarOscuro) html.classList.add('dark');
             else html.classList.remove('dark');
 
+            if (currentFondo === 'ninguno' || currentFondo === 'default') {
+                const container = document.getElementById('chat-container');
+                container.style.background = aplicarOscuro ? '#0f172a' : '#f8fafc';
+            }
+
             if (guardar) {
                 localStorage.setItem('tema_zoopedia', modo);
                 mostrarToastPersonalizado(`Tema cambiado a: ${modo}`, "exito");
@@ -1833,9 +1861,14 @@
         function cambiarFondoChat(urlFondo, guardar = true) {
             currentFondo = urlFondo;
             const container = document.getElementById('chat-container');
-            if(urlFondo === 'default') container.style.background = '#f8fafc';
-            else if (urlFondo === 'black') container.style.background = '#0f172a';
-            else {
+            
+            // Tratamos 'default' como 'ninguno' por compatibilidad con usuarios viejos
+            if(urlFondo === 'ninguno' || urlFondo === 'default' || urlFondo === 'black') {
+                currentFondo = 'ninguno'; // Forzamos el estado a ninguno
+                // El color depende del tema activo, verificando si HTML tiene la clase 'dark'
+                const esOscuro = document.documentElement.classList.contains('dark');
+                container.style.background = esOscuro ? '#0f172a' : '#f8fafc';
+            } else {
                 container.style.background = `url('${urlFondo}')`;
                 container.style.backgroundSize = 'cover';
                 container.style.backgroundPosition = 'center';
@@ -1846,7 +1879,6 @@
                 guardarPreferenciasBD();
             }
         }
-
         function cambiarFotoPerfil(urlFoto, guardar = true) {
             currentAvatar = urlFoto;
             const profileBtn = document.getElementById('profile-btn');
@@ -1868,15 +1900,44 @@
             document.getElementById('input-foto-local').click();
         }
 
-        document.getElementById('input-foto-local').addEventListener('change', function(e) {
+        async function manejarSubidaFotoLocal(e) {
             if(e.target.files && e.target.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(evt) {
-                    cambiarFotoPerfil(evt.target.result);
+                reader.onload = async function(evt) {
+                    const base64Img = evt.target.result;
+                    
+                    // 1. Cambiamos la foto actual inmediatamente
+                    cambiarFotoPerfil(base64Img);
+
+                    // 2. Guardamos la imagen en la base de datos (Persistencia real)
+                    try {
+                        const response = await fetch(`${API_URL}/usuario/avatares`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_id: usuarioActual.id,
+                                imagen_base64: base64Img
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if(response.ok) {
+                            // Si el backend la guardó, recargamos el carrusel
+                            cargarAvataresPersonalizados();
+                        } else {
+                            mostrarToastPersonalizado(data.detail || "Error al subir avatar", "error");
+                        }
+                    } catch (error) {
+                        mostrarToastPersonalizado("Error de red al intentar guardar la imagen", "error");
+                    }
                 }
                 reader.readAsDataURL(e.target.files[0]);
             }
-        });
+        }
+
+        // Conectamos el evento al botón
+        document.getElementById('input-foto-local').addEventListener('change', manejarSubidaFotoLocal);
 
         let toastTimer;
         function mostrarToastPersonalizado(mensaje, tipo) {
@@ -2408,6 +2469,120 @@
                 }
             } catch(e) {
                 mostrarToastPersonalizado("Error de red", "error");
+            }
+        }
+
+        // Arreglo base de avatares por defecto
+        const avataresPorDefecto = [
+            'https://cdn-icons-png.flaticon.com/512/1998/1998671.png',
+            'https://cdn-icons-png.flaticon.com/512/1998/1998766.png',
+            'https://cdn-icons-png.flaticon.com/512/1998/1998592.png',
+            'https://cdn-icons-png.flaticon.com/512/1998/1998713.png',
+            'https://cdn-icons-png.flaticon.com/512/1998/1998751.png'
+        ];
+
+        async function cargarAvataresPersonalizados() {
+            try {
+                const response = await fetch(`${API_URL}/usuario/avatares/${usuarioActual.id}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    actualizarCarruselAvatares(data.avatares);
+                }
+            } catch (error) {
+                console.error("Error al cargar avatares", error);
+            }
+        }
+
+        function actualizarCarruselAvatares(avataresCustom) {
+            const contenedor = document.getElementById('contenedor-avatares-rapidos');
+            if (!contenedor) return;
+            
+            // 1. Botón fijo de Subir desde PC
+            let html = `
+                <input type="file" id="input-foto-local" accept="image/*" class="hidden">
+                <button onclick="triggerSubirFoto()" class="w-14 h-14 flex-shrink-0 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:text-zoo hover:border-zoo hover:bg-zoo-light transition-colors" title="Subir desde PC">
+                    <i class="fa-solid fa-upload text-lg"></i>
+                </button>
+            `;
+
+            // 2. Lógica para mezclar y distinguir personalizados de por defecto
+            let avataresMostrar = [];
+            
+            // Metemos los personalizados y les guardamos su ID de la base de datos
+            avataresCustom.forEach(a => avataresMostrar.push({ url: a.imagen_base64, id: a.id, esCustom: true }));
+            
+            // Rellenamos con los de por defecto (esCustom: false)
+            let i = 0;
+            while(avataresMostrar.length < 5 && i < avataresPorDefecto.length) {
+                avataresMostrar.push({ url: avataresPorDefecto[i], id: null, esCustom: false });
+                i++;
+            }
+
+            // 3. Pintar los avatares con opción de eliminar si son personalizados
+            avataresMostrar.forEach(avatar => {
+                if(avatar.esCustom) {
+                    html += `
+                    <div class="relative w-14 h-14 flex-shrink-0 group">
+                        <button onclick="cambiarFotoPerfil('${avatar.url}')" class="w-full h-full rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm">
+                            <img src="${avatar.url}" class="w-full h-full object-cover">
+                        </button>
+                        <button onclick="abrirModalEliminarAvatar(${avatar.id})" class="absolute -top-1 -right-1 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-600 shadow-md opacity-0 group-hover:opacity-100 transition-opacity transform hover:scale-110" title="Eliminar de mi colección">
+                            <i class="fa-solid fa-xmark text-[10px]"></i>
+                        </button>
+                    </div>
+                    `;
+                } else {
+                    html += `
+                    <button onclick="cambiarFotoPerfil('${avatar.url}')" class="w-14 h-14 flex-shrink-0 rounded-full border-2 border-transparent hover:border-zoo overflow-hidden focus:border-zoo transition-all shadow-sm">
+                        <img src="${avatar.url}" class="w-full h-full object-cover">
+                    </button>
+                    `;
+                }
+            });
+
+            // 4. Botón fijo de Ver más animales
+            html += `
+                <button onclick="abrirGaleriaAvatares()" class="w-14 h-14 flex-shrink-0 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-zoo transition-colors shadow-inner" title="Ver más animales">
+                    <i class="fa-solid fa-plus text-xl"></i>
+                </button>
+            `;
+
+            contenedor.innerHTML = html;
+            document.getElementById('input-foto-local').addEventListener('change', manejarSubidaFotoLocal);
+        }
+        // --- LÓGICA DE ELIMINACIÓN DE AVATARES ---
+        let avatarAEliminarId = null;
+
+        function abrirModalEliminarAvatar(id) {
+            avatarAEliminarId = id;
+            document.getElementById('modal-eliminar-avatar').classList.remove('hidden');
+        }
+
+        function cerrarModalEliminarAvatar() {
+            document.getElementById('modal-eliminar-avatar').classList.add('hidden');
+            avatarAEliminarId = null;
+        }
+
+        async function confirmarEliminarAvatar() {
+            if(!avatarAEliminarId) return;
+            
+            try {
+                // Se ejecuta el DELETE mandando el ID del avatar y el ID del usuario
+                const response = await fetch(`${API_URL}/usuario/avatares/${avatarAEliminarId}?user_id=${usuarioActual.id}`, {
+                    method: 'DELETE'
+                });
+                
+                if(response.ok) {
+                    mostrarToastPersonalizado("Avatar eliminado correctamente", "exito");
+                    cerrarModalEliminarAvatar();
+                    // Refrescamos la vista para que la "X" se vaya y entre un avatar predeterminado
+                    cargarAvataresPersonalizados(); 
+                } else {
+                    mostrarToastPersonalizado("Error al eliminar el avatar", "error");
+                }
+            } catch (error) {
+                mostrarToastPersonalizado("Error de red al intentar eliminar", "error");
             }
         }
 

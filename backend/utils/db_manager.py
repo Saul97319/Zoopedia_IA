@@ -544,3 +544,55 @@ def obtener_datos_rostro(email):
     c.close()
     conn.close()
     return usuario
+
+# --- FUNCIONES DE AVATARES PERSONALIZADOS ---
+def obtener_avatares_personalizados(user_id):
+    """Obtiene los avatares subidos por el usuario (máximo 5)."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, imagen_base64 FROM avatares_personalizados WHERE usuario_id = %s ORDER BY fecha_creacion DESC", (user_id,))
+    avatares = c.fetchall()
+    c.close()
+    conn.close()
+    return [{"id": a[0], "imagen_base64": a[1]} for a in avatares]
+
+def guardar_avatar_personalizado(user_id, imagen_base64):
+    """Guarda un nuevo avatar verificando el límite de 5."""
+    conn = get_connection()
+    c = conn.cursor()
+    
+    # Verificamos cuántos tiene actualmente
+    c.execute("SELECT COUNT(*) FROM avatares_personalizados WHERE usuario_id = %s", (user_id,))
+    total = c.fetchone()[0]
+    
+    if total >= 5:
+        c.close()
+        conn.close()
+        return False, "Límite alcanzado"
+        
+    try:
+        c.execute("INSERT INTO avatares_personalizados (usuario_id, imagen_base64) VALUES (%s, %s) RETURNING id", (user_id, imagen_base64))
+        nuevo_id = c.fetchone()[0]
+        conn.commit()
+        return True, nuevo_id
+    except Exception as e:
+        conn.rollback()
+        return False, str(e)
+    finally:
+        c.close()
+        conn.close()
+
+def eliminar_avatar_personalizado(avatar_id, user_id):
+    """Elimina un avatar asegurando que pertenezca al usuario."""
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("DELETE FROM avatares_personalizados WHERE id = %s AND usuario_id = %s", (avatar_id, user_id))
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        return False
+    finally:
+        c.close()
+        conn.close()
