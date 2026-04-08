@@ -117,6 +117,10 @@ class RostroLoginRequest(BaseModel):
     email: str
     imagen_base64: str
 
+class AvatarPersonalizadoRequest(BaseModel):
+    user_id: int
+    imagen_base64: str
+
 # 1. Agrega esto junto a tus otras clases "class Request(...):"
 class MensajeImagenRequest(BaseModel):
     pregunta: str
@@ -339,6 +343,28 @@ def cambiar_password_endpoint(req: CambiarPasswordRequest):
     except AttributeError:
         # Si la función aún no está programada en tu db_manager, la API no crasheará y avisará amablemente
         raise HTTPException(status_code=501, detail="La función cambiar_password aún no está implementada en tu base de datos.")
+
+@app.get("/usuario/avatares/{user_id}")
+def obtener_avatares_endpoint(user_id: int):
+    avatares = db_manager.obtener_avatares_personalizados(user_id)
+    return {"success": True, "avatares": avatares}
+
+@app.post("/usuario/avatares")
+def guardar_avatar_endpoint(req: AvatarPersonalizadoRequest):
+    exito, resultado = db_manager.guardar_avatar_personalizado(req.user_id, req.imagen_base64)
+    if not exito:
+        if resultado == "Límite alcanzado":
+            raise HTTPException(status_code=403, detail="Has alcanzado el límite de 5 iconos personalizados.")
+        raise HTTPException(status_code=500, detail="Error al guardar en la base de datos.")
+    
+    return {"success": True, "avatar_id": resultado, "mensaje": "Avatar guardado"}
+
+@app.delete("/usuario/avatares/{avatar_id}")
+def eliminar_avatar_endpoint(avatar_id: int, user_id: int):
+    exito = db_manager.eliminar_avatar_personalizado(avatar_id, user_id)
+    if not exito:
+        raise HTTPException(status_code=400, detail="No se pudo eliminar el avatar.")
+    return {"success": True, "mensaje": "Avatar eliminado"}
 
 # Modelos y Endpoint para cambiar PIN
 class CambiarPinRequest(BaseModel):
