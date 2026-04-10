@@ -383,11 +383,12 @@ def resolver_alerta(conversacion_id):
 def obtener_mensajes_chat(conversacion_id):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT rol, contenido FROM mensajes WHERE conversacion_id = %s ORDER BY id ASC", (conversacion_id,))
+    # Añadimos imagen_base64 a la consulta SQL
+    c.execute("SELECT rol, contenido, imagen_base64 FROM mensajes WHERE conversacion_id = %s ORDER BY id ASC", (conversacion_id,))
     mensajes = c.fetchall()
     c.close()
     conn.close()
-    return [{"role": m[0], "content": m[1]} for m in mensajes]
+    return [{"role": m[0], "content": m[1], "imagen_base64": m[2]} for m in mensajes]
 
 def guardar_mensaje(conversacion_id, rol, contenido):
     conn = get_connection()

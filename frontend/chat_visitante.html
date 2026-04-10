@@ -252,9 +252,9 @@
 
     <!-- (12) MODAL DE ALERTA DE EMERGENCIA (PÁNICO) -->
     <div id="modal-emergencia" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform scale-95 opacity-0 transition-all duration-300" id="modal-emergencia-content">
+        <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden transform scale-95 opacity-0 transition-all duration-300 flex flex-col max-h-[90vh]" id="modal-emergencia-content">
             <!-- Header Rojo -->
-            <div class="bg-red-600 p-6 text-center text-white relative">
+            <div class="bg-red-600 p-6 text-center text-white relative flex-shrink-0 z-10 shadow-sm">
                 <button onclick="cerrarModalEmergencia()" class="absolute top-4 right-4 text-red-200 hover:text-white transition-colors">
                     <i class="fa-solid fa-xmark text-2xl"></i>
                 </button>
@@ -262,8 +262,9 @@
                 <h2 class="text-2xl font-black uppercase tracking-wide">Alerta de Emergencia</h2>
                 <p class="text-red-100 text-sm mt-1">Uso exclusivo para peligro de animales o visitantes</p>
             </div>
+
             
-            <div class="p-6">
+            <div class="p-6 overflow-y-auto scrollbar-thin">
                 <p class="text-slate-600 text-sm text-center font-medium mb-6">
                     🚨 <strong class="text-red-600">Advertencia:</strong> El uso falso o abusivo de esta función resultará en la suspensión de tu cuenta.
                 </p>
@@ -313,6 +314,41 @@
         <label class="block text-sm font-bold text-slate-700 mb-1">Descripción breve</label>
         <textarea id="alerta-descripcion" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 bg-slate-50 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 resize-none h-20" placeholder="Ej. Hay un visitante en el área restringida..."></textarea>
     </div>
+                <div class="mt-4 mb-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-2"><i class="fa-solid fa-camera text-zoo mr-1"></i> Evidencia (Opcional)</label>
+                    <div class="flex gap-2">
+                        <button onclick="document.getElementById('input-evidencia-alerta').click()" class="flex-1 bg-white border border-slate-300 hover:border-zoo hover:text-zoo text-slate-600 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-xs">
+                            <i class="fa-solid fa-image"></i> Subir Galería
+                        </button>
+                        <button onclick="abrirCamaraAlerta()" class="flex-1 bg-white border border-slate-300 hover:border-zoo hover:text-zoo text-slate-600 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 text-xs">
+                            <i class="fa-solid fa-camera-retro"></i> Usar Cámara
+                        </button>
+                    </div>
+                    
+                    <input type="file" id="input-evidencia-alerta" accept="image/*" class="hidden" onchange="procesarEvidenciaLocal(event)">
+                    
+                    <div id="preview-evidencia-container" class="hidden relative mt-3 w-full h-40 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden group">
+                        <img id="preview-evidencia-img" src="" class="h-full w-full object-contain">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <button onclick="removerEvidenciaAlerta()" class="bg-red-500 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-600 hover:scale-110 transition-transform shadow-lg">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="contenedor-camara-alerta" class="hidden relative mt-3 w-full h-48 bg-black rounded-xl overflow-hidden shadow-inner border border-slate-300">
+                        <video id="video-alerta" class="w-full h-full object-cover" autoplay playsinline></video>
+                        <div class="absolute bottom-3 inset-x-0 flex justify-center gap-4">
+                            <button onclick="cerrarCamaraAlerta()" class="bg-slate-800/80 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-500 transition-colors backdrop-blur-sm">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                            <button onclick="capturarFotoAlerta()" class="bg-white text-zoo-dark w-12 h-12 rounded-full font-bold shadow-[0_0_15px_rgba(255,255,255,0.5)] hover:scale-110 transition-transform flex items-center justify-center">
+                                <i class="fa-solid fa-camera text-xl"></i>
+                            </button>
+                        </div>
+                        <canvas id="canvas-alerta" class="hidden"></canvas>
+                    </div>
+                </div>
                 <!-- Botón con SEGURO DE 8 SEGUNDOS -->
                 <div class="mt-8">
                     <button id="btn-enviar-alerta" disabled class="w-full py-4 rounded-xl font-black uppercase tracking-wider text-white bg-slate-400 cursor-not-allowed transition-all relative overflow-hidden flex flex-col items-center justify-center h-14">
@@ -621,9 +657,18 @@
 
                 <div>
                     <h3 class="text-sm font-bold text-slate-700 uppercase mb-3"><i class="fa-regular fa-image mr-1 text-zoo"></i> Fondo del Chat</h3>
-                    <div class="grid grid-cols-3 gap-2"> <button onclick="cambiarFondoChat('ninguno')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 hover:border-zoo hover:bg-slate-200 transition-colors shadow-sm">Ninguno</button>
-                        <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('https://img.freepik.com/vector-gratis/patron-hojas-verdes_1017-10497.jpg');"></button>
-                        <button onclick="cambiarFondoChat('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg')" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('https://img.freepik.com/vector-gratis/patron-animales-safari_1017-15228.jpg');"></button>
+                    <div class="grid grid-cols-3 gap-2"> 
+                        <button onclick="cambiarFondoChat('ninguno')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 hover:border-zoo hover:bg-slate-200 transition-colors shadow-sm">Ninguno</button>
+                        
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo1.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo1.jpg');"></button>
+                        
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo2.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo2.jpg');"></button>
+                        
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo3.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo3.jpg');"></button>
+
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo4.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo4.jpg');"></button>
+                        
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo5.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo5.jpg');"></button>
                     </div>
                 </div>
 
@@ -887,38 +932,6 @@
             alertaInterval = setInterval(() => cargarMensajesAlerta(chat_id, true), 3000);
         }
 
-        async function abrirChatAlerta(chat_id, titulo) {
-            chatAlertaActualId = chat_id;
-            const estaResuelto = titulo.startsWith("[RESUELTO]");
-            
-            document.getElementById('vista-lista-alertas').classList.add('hidden');
-            document.getElementById('vista-chat-alerta').classList.remove('hidden');
-            
-            document.getElementById('alerta-chat-titulo').textContent = titulo;
-            const estadoEl = document.getElementById('alerta-chat-estado');
-            const inputZone = document.getElementById('alerta-chat-input-zone');
-            
-            // LA MAGIA: Si está resuelto, quitamos el input y ponemos un mensaje de bloqueo
-            if (estaResuelto) {
-                estadoEl.textContent = "Reporte Cerrado";
-                estadoEl.className = "text-xs text-green-600 font-semibold";
-                inputZone.innerHTML = '<div class="w-full text-center p-3 text-xs text-slate-500 font-bold bg-slate-100 rounded-xl border border-slate-200"><i class="fa-solid fa-lock mr-1"></i> Este reporte ha sido marcado como resuelto por el cuidador. El chat está cerrado.</div>';
-            } else {
-                estadoEl.textContent = "Reporte Abierto - Personal conectado";
-                estadoEl.className = "text-xs text-red-600 font-semibold animate-pulse";
-                inputZone.innerHTML = `
-                    <input type="text" id="input-mensaje-alerta" class="flex-1 border border-slate-300 rounded-full px-4 py-2 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" placeholder="Escribe un mensaje al cuidador..." onkeypress="if(event.key === 'Enter') enviarMensajeAlerta()">
-                    <button onclick="enviarMensajeAlerta()" class="bg-blue-500 hover:bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-sm">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                `;
-            }
-
-            cargarMensajesAlerta(chat_id);
-            if(alertaInterval) clearInterval(alertaInterval);
-            alertaInterval = setInterval(() => cargarMensajesAlerta(chat_id, true), 3000);
-        }
-
         async function cargarMensajesAlerta(chat_id, esPolling = false) {
             if(chatAlertaActualId !== chat_id) return;
             
@@ -934,12 +947,18 @@
                         contenedorMensajes.innerHTML = ''; 
                         
                         data.mensajes.forEach(msg => {
+                            // 1. Preparamos el HTML de la foto si es que el usuario envió una
+                            const imgEvidencia = msg.imagen_base64 
+                                ? `<div class="mt-3 mb-1"><img src="${msg.imagen_base64}" class="w-full max-w-xs rounded-xl shadow-sm border-2 border-white/30 cursor-pointer hover:scale-105 transition-transform" onclick="window.open('${msg.imagen_base64}', '_blank')"></div>` 
+                                : '';
+
                             if (msg.role === 'Usuario') {
                                 contenedorMensajes.innerHTML += `
                                     <div class="msg-row flex justify-end mb-4">
-                                        <div class="bg-blue-500 text-white px-4 py-2 text-sm rounded-2xl rounded-br-none max-w-[80%] shadow-md whitespace-pre-wrap">
+                                        <div class="bg-blue-500 text-white px-4 py-2 text-sm rounded-2xl rounded-br-none max-w-[80%] shadow-md">
                                         ${msg.content}
-                                    </div>
+                                        ${imgEvidencia}
+                                        </div>
                                     </div>
                                 `;
                             } else {
@@ -949,6 +968,7 @@
                                         <div class="bg-white border border-slate-200 px-4 py-3 text-sm rounded-2xl rounded-bl-none max-w-[80%] shadow-sm text-slate-700">
                                             <p class="text-[10px] font-bold text-red-600 mb-1">Cuidador Zoopedia</p>
                                             ${msg.content}
+                                            ${imgEvidencia}
                                         </div>
                                     </div>
                                 `;
@@ -1307,7 +1327,8 @@
                 if (response.ok && data.mensajes) {
                     data.mensajes.forEach(msg => {
                         if (msg.role === 'Usuario') {
-                            agregarMensajeUsuario(msg.content);
+                            // ¡Solo agregamos la variable de la imagen aquí!
+                            agregarMensajeUsuario(msg.content, msg.imagen_base64);
                         } else {
                             agregarMensajeIA(msg.content);
                         }
@@ -1506,6 +1527,8 @@
         }
 
         function cerrarModalEmergencia() {
+            removerEvidenciaAlerta();
+            cerrarCamaraAlerta();
             modalContent.classList.remove('scale-100', 'opacity-100');
             modalContent.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
@@ -1559,13 +1582,23 @@
                     return;
                 }
 
-                // --- NUEVO: Construimos el texto formateado con saltos de línea (\n) ---
-                let mensajeFormateado = "🚨 Asunto: Emergencia\n";
-                if (animalSeleccionado !== "Ninguno") mensajeFormateado += `🐾 Animal: ${animalSeleccionado}\n`;
-                if (zonaSeleccionada !== "Ninguna") mensajeFormateado += `📍 Zona: ${zonaSeleccionada}\n`;
+                // --- NUEVO: Construimos el texto con formato HTML estructurado ---
+                let mensajeFormateado = `
+                    <div class="space-y-1.5">
+                        <p class="text-base border-b border-white/20 pb-1 mb-2 font-bold"><i class="fa-solid fa-triangle-exclamation text-yellow-300"></i> Asunto: Reporte de Emergencia</p>
+                `;
                 
-                // Agregamos la descripción del usuario al final
-                mensajeFormateado += `\n📝 Detalle:\n${descripcionUsuario}`;
+                if (animalSeleccionado !== "Ninguno") mensajeFormateado += `<p><b>Animal:</b> ${animalSeleccionado}</p>`;
+                if (zonaSeleccionada !== "Ninguna") mensajeFormateado += `<p><b>Zona:</b> ${zonaSeleccionada}</p>`;
+                
+                // Agregamos la descripción usando viñetas para que se vea limpio
+                mensajeFormateado += `
+                        <p class="mt-2"><b>Detalle:</b></p>
+                        <ul class="list-disc list-inside pl-1 text-xs opacity-90 space-y-1">
+                            <li>${descripcionUsuario.replace(/\n/g, '</li><li>')}</li>
+                        </ul>
+                    </div>
+                `;
 
                 // Mantenemos una variable corta para el registro general de la Base de Datos
                 let zonaCorta = "General";
@@ -1582,7 +1615,8 @@
                         body: JSON.stringify({
                             user_id: usuarioActual.id,
                             zona: zonaCorta, // Dato corto para la BD
-                            descripcion: mensajeFormateado // El mensaje bonito y formateado para leerse
+                            descripcion: mensajeFormateado, // El mensaje bonito y formateado para leerse
+                            imagen_base64: evidenciaBase64
                         })
                     });
 
@@ -2584,6 +2618,66 @@
             } catch (error) {
                 mostrarToastPersonalizado("Error de red al intentar eliminar", "error");
             }
+        }
+
+        // --- LÓGICA DE CÁMARA Y FOTOS PARA EMERGENCIAS ---
+        let evidenciaBase64 = null;
+        let streamAlerta = null;
+
+        function procesarEvidenciaLocal(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                evidenciaBase64 = e.target.result;
+                mostrarPreviewEvidencia();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function abrirCamaraAlerta() {
+            document.getElementById('preview-evidencia-container').classList.add('hidden');
+            document.getElementById('contenedor-camara-alerta').classList.remove('hidden');
+            try {
+                // facingMode: 'environment' prioriza la cámara trasera en celulares
+                streamAlerta = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                document.getElementById('video-alerta').srcObject = streamAlerta;
+            } catch (err) {
+                mostrarToastPersonalizado("No se detectó cámara o faltan permisos.", "error");
+                cerrarCamaraAlerta();
+            }
+        }
+
+        function cerrarCamaraAlerta() {
+            document.getElementById('contenedor-camara-alerta').classList.add('hidden');
+            if (streamAlerta) {
+                streamAlerta.getTracks().forEach(track => track.stop());
+                streamAlerta = null;
+            }
+        }
+
+        function capturarFotoAlerta() {
+            const video = document.getElementById('video-alerta');
+            const canvas = document.getElementById('canvas-alerta');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            // Comprimimos un poco en JPG (0.8) para no saturar la red ni la BD
+            evidenciaBase64 = canvas.toDataURL('image/jpeg', 0.8);
+            cerrarCamaraAlerta();
+            mostrarPreviewEvidencia();
+        }
+
+        function mostrarPreviewEvidencia() {
+            document.getElementById('preview-evidencia-img').src = evidenciaBase64;
+            document.getElementById('preview-evidencia-container').classList.remove('hidden');
+        }
+
+        function removerEvidenciaAlerta() {
+            evidenciaBase64 = null;
+            document.getElementById('input-evidencia-alerta').value = '';
+            document.getElementById('preview-evidencia-container').classList.add('hidden');
         }
 
     </script>
