@@ -31,6 +31,15 @@ app = FastAPI(title="Zoopedia API")
 RUTA_PDFS = os.path.join(os.path.dirname(__file__), "data", "docs_animales")
 os.makedirs(RUTA_PDFS, exist_ok=True) # Crea la carpeta si por alguna razón no existe
 
+# --- CONFIGURACIÓN DE CARPETA DE FONDOS ---
+# Detectamos automáticamente la ruta de la carpeta assets/fondos
+# Ajusta la ruta si tu carpeta assets no está dentro del frontend
+RUTA_FONDOS = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "assets", "fondos") 
+os.makedirs(RUTA_FONDOS, exist_ok=True) 
+
+# Montamos la carpeta para que el frontend pueda ver los fondos
+app.mount("/fondos", StaticFiles(directory=RUTA_FONDOS), name="fondos")
+
 # Montamos la carpeta para que el frontend pueda abrir los PDFs
 app.mount("/animales_pdfs", StaticFiles(directory=RUTA_PDFS), name="animales_pdfs")
 
@@ -104,6 +113,7 @@ class AlertaRequest(BaseModel):
     user_id: int
     zona: str
     descripcion: str
+    imagen_base64: Optional[str] = None
 
 class MensajeCuidadorRequest(BaseModel):
     conversacion_id: int
@@ -634,9 +644,15 @@ def obtener_alertas_cuidador_endpoint(user_id: int):
 def enviar_alerta_endpoint(req: AlertaRequest):
     try:
         titulo = f"Emergencia: {req.zona}"
-        # Indicamos explícitamente que es tipo 'alerta'
         chat_id = db_manager.crear_nueva_conversacion(req.user_id, titulo, tipo="alerta")
-        db_manager.guardar_mensaje(chat_id, "Usuario", req.descripcion)
+        
+        # Guardamos el mensaje de texto inicial y obtenemos su ID
+        msg_id = db_manager.guardar_mensaje(chat_id, "Usuario", req.descripcion)
+        
+        # Si el visitante adjuntó una foto, la vinculamos a ese mismo mensaje
+        if req.imagen_base64:
+            db_manager.guardar_imagen_chat(msg_id, req.imagen_base64)
+            
         return {"success": True, "conversacion_id": chat_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
