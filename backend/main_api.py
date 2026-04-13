@@ -93,8 +93,12 @@ class RegistroRequest(BaseModel):
     telefono: str = None
     fecha_nac: str = None
     genero: str = None
-    rol: str = "Visitante"  # <- Nuevo campo
-    pin: str = None # <- Nuevo campo agregado
+    rol: str = "Visitante"
+    pin: str = None
+    # NUEVOS CAMPOS EXCLUSIVOS DE CUIDADOR
+    nacionalidad: str = None
+    lugar_nacimiento: str = None
+    domicilio: str = None
 
 class LoginPinRequest(BaseModel):
     email: str
@@ -206,7 +210,8 @@ def login_endpoint(req: LoginRequest):
 def registrar_endpoint(req: RegistroRequest):
     exito = db_manager.registrar_usuario(
         req.nombre, req.email, req.password, 
-        req.telefono, req.fecha_nac, req.genero, req.rol, req.pin # <- Pasamos el PIN aquí
+        req.telefono, req.fecha_nac, req.genero, req.rol, req.pin,
+        req.nacionalidad, req.lugar_nacimiento, req.domicilio # <-- ¡Faltaba pasar estos 3 datos!
     )
     if not exito:
         raise HTTPException(status_code=400, detail="El correo ya está registrado o es inválido.")
@@ -337,6 +342,13 @@ def obtener_perfil_endpoint(user_id: int):
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return {"success": True, "perfil": usuario}
 
+@app.get("/cuidador/perfil/{user_id}")
+def obtener_perfil_completo_cuidador(user_id: int):
+    perfil = db_manager.obtener_perfil_cuidador(user_id)
+    if not perfil:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+    return {"success": True, "perfil": perfil}
+
 class CambiarPasswordRequest(BaseModel):
     user_id: int
     password_antigua: str
@@ -392,6 +404,11 @@ def cambiar_pin_endpoint(req: CambiarPinRequest):
     except AttributeError:
         raise HTTPException(status_code=501, detail="La función cambiar_pin no está lista.")
 
+@app.get("/usuario/verificar_email/{email}")
+def verificar_email_endpoint(email: str):
+    existe = db_manager.verificar_email_existente(email)
+    return {"existe": existe}
+
 class ActualizarUsuarioRequest(BaseModel):
     nombre: str
     email: str
@@ -399,6 +416,10 @@ class ActualizarUsuarioRequest(BaseModel):
     fecha_nac: str = None
     genero: str = None
     rol: str
+    # Agregamos los campos de cuidador
+    nacionalidad: str = None
+    lugar_nacimiento: str = None
+    domicilio: str = None
 
 class UsuarioActualizarPropioRequest(BaseModel):
     user_id: int
@@ -450,13 +471,13 @@ def obtener_usuarios_endpoint(user_id: int):
 
 @app.put("/admin/usuario/{user_id_actualizar}")
 def actualizar_usuario_endpoint(user_id_actualizar: int, admin_id: int, req: ActualizarUsuarioRequest):
-    # Validar que quien intenta editar sea admin
     usuario_admin = db_manager.obtener_info_usuario(admin_id)
     if not usuario_admin or usuario_admin["rol"] != "Admin":
         raise HTTPException(status_code=403, detail="Permiso denegado")
         
     exito = db_manager.actualizar_usuario(
-        user_id_actualizar, req.nombre, req.email, req.telefono, req.fecha_nac, req.genero, req.rol
+        user_id_actualizar, req.nombre, req.email, req.telefono, req.fecha_nac, req.genero, req.rol,
+        req.nacionalidad, req.lugar_nacimiento, req.domicilio # <-- Añadidos aquí
     )
     
     if not exito:
