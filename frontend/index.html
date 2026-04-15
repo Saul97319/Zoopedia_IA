@@ -684,6 +684,7 @@
     </div>
 
     <!-- SCRIPTS LÓGICOS -->
+    <script src="assets/config.js"></script>
     <script>
         // === SVG PATHS PARA OJITOS ===
         const svgEyeOpen = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
@@ -715,7 +716,7 @@
         }
 
         // --- MANEJO DE ENVÍO DE FORMULARIOS ---
-        const API_URL = "http://127.0.0.1:8000";
+        const API_URL = API_BASE_URL; // Ahora usa la constante global
 
         // --- FUNCIÓN PARA MOSTRAR ERROR ANIMADO ---
         let errorTimeout; // Variable para reiniciar el temporizador si hacen clic varias veces

@@ -660,15 +660,15 @@
                     <div class="grid grid-cols-3 gap-2"> 
                         <button onclick="cambiarFondoChat('ninguno')" class="h-16 rounded-lg border-2 border-slate-300 bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 hover:border-zoo hover:bg-slate-200 transition-colors shadow-sm">Ninguno</button>
                         
-                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo1.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo1.jpg');"></button>
-                        
-                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo2.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo2.jpg');"></button>
-                        
-                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo3.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo3.jpg');"></button>
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo1.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('assets/fondos/Fondo1.jpg');"></button>
 
-                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo4.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo4.jpg');"></button>
-                        
-                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo5.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('http://127.0.0.1:8000/fondos/Fondo5.jpg');"></button>
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo2.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('assets/fondos/Fondo2.jpg');"></button>
+
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo3.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('assets/fondos/Fondo3.jpg');"></button>
+
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo4.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('assets/fondos/Fondo4.jpg');"></button>
+
+                        <button onclick="cambiarFondoChat(`${API_URL}/fondos/Fondo5.jpg`)" class="h-16 rounded-lg border-2 border-transparent hover:border-zoo overflow-hidden bg-cover bg-center transition-all" style="background-image: url('assets/fondos/Fondo5.jpg');"></button>
                     </div>
                 </div>
 
@@ -787,9 +787,9 @@
             </div>
     </div>
     <!-- JAVASCRIPT: Lógica de Interfaz Interactiva (Mock del Backend) -->
+    <script src="assets/config.js"></script>
     <script>
-        // --- 1. Configuración Global y Conexión ---
-        const API_URL = "http://127.0.0.1:8000"; // Asegúrate de que esta línea esté aquí
+        const API_URL = API_BASE_URL;
         const chatContainer = document.getElementById('chat-container');
         const inputField = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');

@@ -3,7 +3,7 @@ import os
 import shutil
 from pydantic import BaseModel
 from utils.db_manager import get_all_posts, create_post, create_reply, delete_post, update_post
-from fastapi import FastAPI, HTTPException, File, UploadFile, Form
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException
@@ -25,6 +25,16 @@ import psycopg2.extras
 
 # 1. Inicializar la app FastAPI
 app = FastAPI(title="Zoopedia API")
+
+# --- CONFIGURACIÓN DE CARPETA DE FONDOS ---
+RUTA_FONDOS = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "assets", "fondos") 
+os.makedirs(RUTA_FONDOS, exist_ok=True) 
+
+# AGREGAR ESTA LÍNEA AQUÍ: Ruta a toda la carpeta frontend
+RUTA_FRONTEND = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+
+# Montamos la carpeta para que el frontend pueda ver los fondos
+app.mount("/fondos", StaticFiles(directory=RUTA_FONDOS), name="fondos")
 
 # --- CONFIGURACIÓN DE CARPETA DE ANIMALES (PDFs) ---
 # Detectamos automáticamente la ruta de la carpeta data/docs_animales
@@ -485,7 +495,7 @@ def actualizar_usuario_endpoint(user_id_actualizar: int, admin_id: int, req: Act
     return {"success": True, "mensaje": "Usuario actualizado correctamente"}
 
 @app.get("/admin/animales")
-def obtener_catalogo_animales():
+def obtener_catalogo_animales(request: Request): # <-- 1. Añadimos request: Request
     animales = []
     if os.path.exists(RUTA_PDFS):
         archivos = os.listdir(RUTA_PDFS)
@@ -502,7 +512,8 @@ def obtener_catalogo_animales():
                 animales.append({
                     "nombre": nombre_limpio,
                     "archivo": archivo,
-                    "url": f"http://127.0.0.1:8000/animales_pdfs/{archivo}"
+                    # 2. Construimos la URL dinámicamente según la IP que hizo la petición
+                    "url": f"{request.base_url}animales_pdfs/{archivo}"
                 })
     return {"success": True, "animales": animales}
 
@@ -761,3 +772,5 @@ def api_update_post(post_id: int, post: PostUpdate):
     update_post(conn, post_id, post.content)
     conn.close()
     return {"message": "Post actualizado"}
+
+app.mount("/", StaticFiles(directory=RUTA_FRONTEND, html=True), name="frontend")

@@ -90,7 +90,7 @@
             
             <!-- Contenedor animado del buscador -->
             <div class="flex items-center relative h-10 justify-end z-20">
-                <input type="text" id="searchInput" class="absolute right-0 w-0 opacity-0 bg-slate-50 border border-transparent focus:border-zoo-500 focus:bg-white outline-none rounded-full pr-10 pl-0 py-2 text-sm transition-all duration-300 origin-right shadow-inner" placeholder="Buscar reporte...">
+                <input type="text" id="searchInput" class="absolute right-0 w-0 opacity-0 bg-slate-50 dark:bg-slate-800 dark:text-white border border-transparent focus:border-zoo-500 dark:focus:border-zoo-500 focus:bg-white dark:focus:bg-slate-700 outline-none rounded-full pr-10 pl-0 py-2 text-sm transition-all duration-300 origin-right shadow-inner" placeholder="Buscar reporte...">
                 <button id="searchBtn" class="text-slate-500 hover:text-zoo-600 hover:bg-slate-100 w-9 h-9 rounded-full flex items-center justify-center transition-colors z-10" title="Buscar reporte">
                     <i class="fa-solid fa-search"></i>
                 </button>
@@ -162,16 +162,17 @@
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center w-full">
             
-            <div id="alertDetailView" class="bg-white w-full max-w-4xl rounded-3xl shadow-sm border border-slate-200 overflow-hidden opacity-0 translate-y-4 transition-all duration-500 flex flex-col min-h-[400px]">
-                
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div id="alertDetailView" class="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden opacity-0 translate-y-4 transition-all duration-500 flex flex-col min-h-[400px]">
+    
+                <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                     <div class="flex gap-4 items-center">
-                        <div class="w-12 h-12 rounded-full bg-zoo-100 text-zoo-600 flex items-center justify-center text-xl font-bold shadow-inner">US</div>
+                        <div class="w-12 h-12 rounded-full bg-zoo-100 dark:bg-zoo-900/50 text-zoo-600 dark:text-zoo-400 flex items-center justify-center text-xl font-bold shadow-inner">US</div>
                         <div>
-                            <h2 class="text-xl font-bold text-slate-800">Usuario</h2>
-                            <p class="text-sm text-slate-500"><i class="fa-regular fa-clock"></i> Hora del reporte: --:--</p>
+                            <h2 class="text-xl font-bold text-slate-800 dark:text-white">Usuario</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400"><i class="fa-regular fa-clock"></i> Hora del reporte: --:--</p>
                         </div>
                     </div>
+        
                     <button id="btn-resolver" onclick="resolverAlertaActiva()" class="hidden bg-red-100 text-red-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-200 transition-colors border border-red-200 shadow-sm">
                         <i class="fa-solid fa-check-double"></i> Marcar Resuelto
                     </button>
@@ -184,9 +185,9 @@
             
         </div>
 
-        <div class="p-6 bg-white border-t border-slate-200 z-10 drop-shadow-2xl">
+        <div class="p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-10 drop-shadow-2xl">
             <div class="max-w-4xl mx-auto relative">
-                <input type="text" id="input-respuesta" onkeypress="handleEnterRespuesta(event)" placeholder="Escribe un mensaje al visitante..." class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-full pl-6 pr-16 py-4 focus:outline-none focus:ring-2 focus:ring-zoo-500 focus:border-transparent transition-all shadow-inner">
+                <input type="text" id="input-respuesta" onkeypress="handleEnterRespuesta(event)" placeholder="Escribe un mensaje al visitante..." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 dark:placeholder-slate-400 rounded-full pl-6 pr-16 py-4 focus:outline-none focus:ring-2 focus:ring-zoo-500 focus:border-transparent transition-all shadow-inner">
                 
                 <button onclick="enviarRespuestaCuidador()" class="absolute right-2 top-2 bottom-2 bg-zoo-500 hover:bg-zoo-600 text-white rounded-full w-12 flex items-center justify-center transition-colors shadow-md transform hover:scale-105 active:scale-95">
                     <i class="fa-solid fa-paper-plane"></i>
@@ -379,11 +380,12 @@
         </div>
     </div>
     <!-- LOGICA JAVASCRIPT -->
+    <script src="assets/config.js"></script>
     <script>
-        // --- 1. CONFIGURACIÓN Y ESTADO ---
-        const API_URL = "http://127.0.0.1:8000";
+        const API_URL = API_BASE_URL;
+        
         let usuarioActual = null;
-        let audioEmergencia = null; 
+        let audioEmergencia = null;
 
         // ========================================================
         // UTILIDADES DE RESALTADO DE TEXTO (SEARCH HIGHLIGHT)
@@ -578,14 +580,14 @@
             `;
 
             panelDerecho.innerHTML += alertasDeEsaFecha.map(a => `
-                <div class="bg-white border-2 border-transparent hover:border-zoo-400 rounded-xl overflow-hidden shadow-sm cursor-pointer transform transition-all hover:-translate-y-1 hover:shadow-md mb-3"
-                     onclick="mostrarDetalleEnCentro(${a.id}, '${a.usuario}', '${a.titulo}', '${a.fecha.split(' ')[1]}', '${a.estado}')">
-                    <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                        <span class="font-bold text-sm text-slate-800 truncate pr-2"><i class="fa-solid fa-user-circle text-slate-400 mr-1"></i> ${a.usuario}</span>
-                        <span class="text-xs text-slate-500 font-medium whitespace-nowrap"><i class="fa-regular fa-clock"></i> ${a.fecha.split(' ')[1]}</span>
+                <div class="bg-white dark:bg-slate-800 border-2 border-transparent hover:border-zoo-400 dark:hover:border-zoo-500 rounded-xl overflow-hidden shadow-sm cursor-pointer transform transition-all hover:-translate-y-1 hover:shadow-md mb-3"
+                    onclick="mostrarDetalleEnCentro(${a.id}, '${a.usuario}', '${a.titulo}', '${a.fecha.split(' ')[1]}', '${a.estado}')">
+                    <div class="p-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                        <span class="font-bold text-sm text-slate-800 dark:text-slate-200 truncate pr-2"><i class="fa-solid fa-user-circle text-slate-400 mr-1"></i> ${a.usuario}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap"><i class="fa-regular fa-clock"></i> ${a.fecha.split(' ')[1]}</span>
                     </div>
-                    <div class="p-3 bg-white">
-                        <p class="text-sm font-semibold text-slate-700 truncate">${a.titulo}</p>
+                    <div class="p-3 bg-white dark:bg-slate-800">
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">${a.titulo}</p>
                         <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-eye text-zoo-400"></i> Clic para abrir detalle</p>
                     </div>
                 </div>
@@ -644,7 +646,19 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    let htmlFinal = `<h3 class="font-bold text-slate-800 text-xl border-b pb-2 mb-4">Asunto: ${titulo}</h3>`;
+                    let htmlFinal = `<h3 class="font-bold text-slate-800 dark:text-white text-xl border-b dark:border-slate-700 pb-2 mb-4">Asunto: ${titulo}</h3>`;
+
+                    // Dentro del map() donde se crean los mensajes:
+                    <div class="flex flex-col ${esVisitante ? 'items-start' : 'items-end'} mb-4 animate-fade-in-up">
+                        <span class="text-[10px] text-slate-400 mb-1 mx-2">${remitente}</span>
+                        <div class="px-5 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm
+                            ${esVisitante 
+                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200 dark:border-slate-700' 
+                                : 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-100 rounded-tr-none border border-emerald-200 dark:border-emerald-800/50'}">
+                            ${msg.content}
+                            ${imgEvidencia}
+                        </div>
+                    </div>
                     
                     if (data.mensajes && data.mensajes.length > 0) {
                         htmlFinal += data.mensajes.map(msg => {
@@ -904,7 +918,19 @@
                     const numMensajesActuales = contenedorMensajes.querySelectorAll('.flex-col').length;
                     
                     if (data.mensajes.length > numMensajesActuales) {
-                        let htmlFinal = `<h3 class="font-bold text-slate-800 text-xl border-b pb-2 mb-4">Asunto: ${titulo}</h3>`;
+                        let htmlFinal = `<h3 class="font-bold text-slate-800 dark:text-white text-xl border-b dark:border-slate-700 pb-2 mb-4">Asunto: ${titulo}</h3>`;
+
+                        // Dentro del map() donde se crean los mensajes:
+                        <div class="flex flex-col ${esVisitante ? 'items-start' : 'items-end'} mb-4 animate-fade-in-up">
+                            <span class="text-[10px] text-slate-400 mb-1 mx-2">${remitente}</span>
+                            <div class="px-5 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm
+                                ${esVisitante 
+                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200 dark:border-slate-700' 
+                                    : 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-100 rounded-tr-none border border-emerald-200 dark:border-emerald-800/50'}">
+                                ${msg.content}
+                                ${imgEvidencia}
+                            </div>
+                        </div>
                         htmlFinal += data.mensajes.map(msg => {
                             const esVisitante = msg.role === 'Usuario';
                             const remitente = esVisitante ? nombreUsuario : 'Zoopedia IA / Cuidador';

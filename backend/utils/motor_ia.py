@@ -18,39 +18,43 @@ class MotorIA_RAG:
         if not self.google_api_key:
             raise ValueError("Falta la GOOGLE_API_KEY en el archivo .env")
 
+        # --- CORRECCIÓN: RUTAS ABSOLUTAS Y SEGURAS ---
+        # Buscamos la ruta real de la carpeta 'backend' dinámicamente
+        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.persist_directory = os.path.join(self.base_dir, "data", "chroma_db")
+        self.docs_directory = os.path.join(self.base_dir, "data", "docs_animales")
+
         # 2. Configuración del Cerebro Local (Embeddings)
         print("⚙️ Configurando: Embeddings Locales + gemma-3-27b-it...")
         self.embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-        self.persist_directory = "./data/chroma_db"
         
-        # 3. Configuración del LLM (El que responde)
-        # Usamos 'gemini-1.5-flash' porque es rápido y eficiente para RAG
+        # 3. Configuración del LLM
         self.llm = ChatGoogleGenerativeAI(
             model="gemma-3-27b-it",
             google_api_key=self.google_api_key,
-            temperature=0.2 # Baja creatividad para que sea más factual
+            temperature=0.2 
         )
         
-       # self.chat_history = []  # Aquí guardaremos la conversación local
-
-        # Variable para conexión perezosa (Lazy Loading)
         self.vectorstore = None
 
     def _conectar_db(self):
-        """Conecta a la base de datos solo si existe y no está conectada"""
+        """Conecta a la base de datos vectorial. Si no existe, la crea automáticamente."""
         if os.path.exists(self.persist_directory):
             self.vectorstore = Chroma(
                 persist_directory=self.persist_directory, 
                 embedding_function=self.embeddings
             )
             return True
-        return False
+        else:
+            # --- CORRECCIÓN: AUTO-ENTRENAMIENTO ---
+            print("⚠️ Cerebro de IA no encontrado. Leyendo PDFs y entrenando ahora...")
+            self.cargar_documentos_pdf()
+            return self.vectorstore is not None
 
     def cargar_documentos_pdf(self):
-        """Re-entrena la IA (Solo ejecutar si cambias los PDFs)"""
-        print("--- INICIANDO PROCESO DE CARGA (Update) ---")
+        """Re-entrena la IA leyendo los PDFs de la carpeta"""
+        print("--- INICIANDO PROCESO DE CARGA DE DOCUMENTOS ---")
         
-        # Borrado seguro para Windows
         if os.path.exists(self.persist_directory):
             try:
                 shutil.rmtree(self.persist_directory)
@@ -58,39 +62,39 @@ class MotorIA_RAG:
                 print("⚠️ Error: Cierra procesos que usen la carpeta chroma_db")
                 return
 
-        print("1. Leyendo PDFs...")
-        folder_path = './data/docs_animales'
+        print("1. Leyendo PDFs de animales...")
         docs = []
         
-        # Lectura robusta con PyPDFLoader
-        if not os.path.exists(folder_path):
-            print(f"❌ Carpeta no encontrada: {folder_path}")
+        # Usamos la nueva ruta absoluta segura
+        if not os.path.exists(self.docs_directory):
+            print(f"❌ Carpeta no encontrada: {self.docs_directory}")
+            os.makedirs(self.docs_directory, exist_ok=True)
             return
 
-        for filename in os.listdir(folder_path):
+        for filename in os.listdir(self.docs_directory):
             if filename.lower().endswith('.pdf'):
                 try:
-                    loader = PyPDFLoader(os.path.join(folder_path, filename))
+                    loader = PyPDFLoader(os.path.join(self.docs_directory, filename))
                     docs.extend(loader.load())
                     print(f"   ✅ Leído: {filename}")
                 except Exception as e:
                     print(f"   ❌ Error en {filename}: {e}")
 
-        if not docs: return
+        if not docs: 
+            print("⚠️ No se encontraron PDFs para entrenar a la IA.")
+            return
 
-        # 2. Fragmentación
-        print("2. Fragmentando...")
+        print("2. Fragmentando textos...")
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         fragments = text_splitter.split_documents(docs)
         
-        # 3. Guardado
-        print("3. Guardando memoria...")
+        print("3. Guardando memoria en ChromaDB...")
         self.vectorstore = Chroma.from_documents(
             documents=fragments,
             embedding=self.embeddings,
             persist_directory=self.persist_directory
         )
-        print("¡Memoria actualizada!")
+        print("¡Memoria de la IA construida y guardada correctamente!")
 
     def _reformular_pregunta(self, pregunta_usuario, historial_chat):
         """
@@ -149,7 +153,6 @@ class MotorIA_RAG:
 
         contexto_texto = "\n\n".join([doc.page_content for doc in docs])
 
-        # 4. Prompt de Respuesta (El template que ya tenías se mantiene igual)
         # 4. Prompt de Respuesta 
         template = """
         Eres Zoopedia, el experto oficial del Zoológico de Guadalajara. Tu tono es educativo, amable y profesional.
@@ -184,8 +187,7 @@ class MotorIA_RAG:
 if __name__ == "__main__":
     motor = MotorIA_RAG()
     
-    # Si no tienes la carpeta data/chroma_db, descomenta la siguiente línea una vez:
-    # motor.cargar_documentos_pdf()
+    # La carga de documentos ahora es 100% automática al buscar una respuesta
     
     print("\n🦁 BIENVENIDO A ZOOPEDIA IA (Consola de Prueba) 🦁")
     print("Escribe 'salir' para terminar.\n")
