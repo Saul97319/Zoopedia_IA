@@ -504,6 +504,22 @@
 
         // Inicializar
         document.addEventListener('DOMContentLoaded', loadPosts);
+
+        function volverAtras() {
+            // Leer los parámetros de la URL
+            const parametros = new URLSearchParams(window.location.search);
+            const origen = parametros.get('origen');
+
+            // Decidir a dónde regresar basándonos en el parámetro
+            if (origen === 'cuidador') {
+                window.location.href = "chat_cuidador.html";
+            } else if (origen === 'visitante') {
+                window.location.href = "chat_visitante.html"; 
+            } else {
+                // Por seguridad, si entran directo sin parámetro, mándalos al login
+                window.location.href = "index.html"; 
+            }
+        }
     </script>
 </body>
 </html>
