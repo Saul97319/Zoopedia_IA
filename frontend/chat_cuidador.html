@@ -5,15 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zoopedia IA - Vista Cuidador</title>
     <link rel="icon" type="image/png" href="assets/logo_favicon.png">
-    <!-- Tailwind CSS para el diseño rápido y moderno -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para los íconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -23,7 +22,7 @@
                         zoo: {
                             50: '#ecfdf5',
                             100: '#d1fae5',
-                            500: '#10b981', // Verde esmeralda principal
+                            500: '#10b981',
                             600: '#059669',
                             700: '#047857',
                             900: '#064e3b',
@@ -48,7 +47,6 @@
         }
     </script>
     <style>
-        /* Estilos personalizados para las barras de desplazamiento */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -64,73 +62,79 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8; 
         }
+        /* Ajuste de scrollbar para modo oscuro */
+        .dark ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569; 
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+        
         .glass-effect {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
         }
+        .dark .glass-effect {
+            background: rgba(15, 23, 42, 0.95);
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 h-screen w-screen overflow-hidden flex font-sans">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 h-screen w-screen overflow-hidden flex font-sans transition-colors duration-300">
 
-    <!-- PANEL IZQUIERDO: Calendario de Reportes -->
-    <aside id="leftPanel" class="w-80 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 relative z-20 shadow-sm">
+    <aside id="leftPanel" class="w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 relative z-20 shadow-sm">
         
-        <!-- Cabecera Izquierda -->
-        <div class="flex items-center justify-between p-4 border-b border-slate-100 bg-white">
-            <button id="toggleMenuBtn" class="text-slate-500 hover:text-zoo-600 hover:bg-zoo-50 p-2 rounded-lg transition-colors z-20 bg-white" title="Ocultar Menú">
+        <div class="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <button id="toggleMenuBtn" class="text-slate-500 hover:text-zoo-600 hover:bg-zoo-50 dark:hover:bg-slate-800 dark:text-slate-400 p-2 rounded-lg transition-colors z-20" title="Ocultar Menú">
                 <i class="fa-solid fa-bars text-xl"></i>
             </button>
             
-            <!-- Título que se desvanece al buscar -->
-            <div id="reportTitle" class="flex items-center gap-2 text-zoo-700 font-semibold transition-opacity duration-300 z-10 absolute left-16">
+            <div id="reportTitle" class="flex items-center gap-2 text-zoo-700 dark:text-zoo-500 font-semibold transition-opacity duration-300 z-10 absolute left-16">
                 <i class="fa-regular fa-calendar-alt"></i>
                 <span>Reportes</span>
             </div>
             
-            <!-- Contenedor animado del buscador -->
             <div class="flex items-center relative h-10 justify-end z-20">
-                <input type="text" id="searchInput" class="absolute right-0 w-0 opacity-0 bg-slate-50 border border-transparent focus:border-zoo-500 focus:bg-white outline-none rounded-full pr-10 pl-0 py-2 text-sm transition-all duration-300 origin-right shadow-inner" placeholder="Buscar reporte...">
-                <button id="searchBtn" class="text-slate-500 hover:text-zoo-600 hover:bg-slate-100 w-9 h-9 rounded-full flex items-center justify-center transition-colors z-10" title="Buscar reporte">
+                <input type="text" id="searchInput" class="absolute right-0 w-0 opacity-0 bg-slate-50 dark:bg-slate-800 dark:text-white border border-transparent focus:border-zoo-500 dark:focus:border-zoo-500 focus:bg-white dark:focus:bg-slate-700 outline-none rounded-full pr-10 pl-0 py-2 text-sm transition-all duration-300 origin-right shadow-inner" placeholder="Buscar reporte...">
+                <button id="searchBtn" class="text-slate-500 dark:text-slate-400 hover:text-zoo-600 hover:bg-slate-100 dark:hover:bg-slate-800 w-9 h-9 rounded-full flex items-center justify-center transition-colors z-10" title="Buscar reporte">
                     <i class="fa-solid fa-search"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Lista de Fechas/Reportes -->
         <div id="alertas-lista" class="flex-1 overflow-y-auto p-4 space-y-6">
             <p class="text-sm text-slate-400 text-center mt-10">
                 <i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando reportes...
             </p>
         </div>
 
-        <!-- Footer Izquierdo (Perfil) -->
-        <div class="border-t border-slate-100 p-4 bg-white relative">
-            <button id="profileBtn" class="flex items-center gap-3 w-full hover:bg-slate-50 p-2 rounded-lg transition-colors group">
-                <div class="w-10 h-10 rounded-full bg-zoo-100 text-zoo-600 flex items-center justify-center text-xl shadow-inner">
+        <div class="border-t border-slate-100 dark:border-slate-800 p-4 bg-white dark:bg-slate-900 relative">
+            <button id="profileBtn" class="flex items-center gap-3 w-full hover:bg-slate-50 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors group">
+                <div class="w-10 h-10 rounded-full bg-zoo-100 dark:bg-zoo-900/50 text-zoo-600 dark:text-zoo-400 flex items-center justify-center text-xl shadow-inner">
                     <i class="fa-solid fa-user-tie"></i>
                 </div>
                 <div class="text-left flex-1">
-                    <p class="text-sm font-semibold text-slate-800">Menú Cuidador</p>
-                    <p class="text-xs text-slate-500">Configuración</p>
+                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Menú Cuidador</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Configuración</p>
                 </div>
-                <!-- Nuevo ícono circular de perfil animado -->
                 <i class="fa-solid fa-circle-user text-slate-400 group-hover:text-zoo-500 text-2xl transition-all duration-500" id="profileArrow"></i>
             </button>
 
-            <!-- Menú Desplegable de Perfil animado con escala -->
-            <div id="profileMenu" class="absolute bottom-full left-4 mb-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl opacity-0 invisible transition-all duration-300 transform translate-y-6 scale-75 origin-bottom-left z-50">
+            <div id="profileMenu" class="absolute bottom-full left-4 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl opacity-0 invisible transition-all duration-300 transform translate-y-6 scale-75 origin-bottom-left z-50">
                 <div class="p-2 space-y-1">
-                    <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-zoo-50 hover:text-zoo-600 rounded-lg flex items-center gap-3 transition-colors">
+                    <button onclick="abrirModalPerfil()" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-zoo-50 dark:hover:bg-slate-700 hover:text-zoo-600 rounded-lg flex items-center gap-3 transition-colors">
                         <i class="fa-regular fa-id-card w-4"></i> Información Personal
                     </button>
-                    <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-zoo-50 hover:text-zoo-600 rounded-lg flex items-center gap-3 transition-colors">
+                    <button onclick="abrirModalTema()" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-zoo-50 dark:hover:bg-slate-700 hover:text-zoo-600 rounded-lg flex items-center gap-3 transition-colors">
                         <i class="fa-solid fa-palette w-4"></i> Tema
                     </button>
-                    <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-zoo-50 hover:text-zoo-600 rounded-lg flex items-center gap-3 transition-colors">
+                    <button onclick="abrirModalAyuda()" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-zoo-50 dark:hover:bg-slate-700 hover:text-zoo-600 rounded-lg flex items-center gap-3 transition-colors">
                         <i class="fa-regular fa-circle-question w-4"></i> Ayuda
                     </button>
-                    <div class="h-px bg-slate-100 my-1"></div>
-                    <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-3 transition-colors">
+                    <div class="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+                    <button class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg flex items-center gap-3 transition-colors">
                         <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> Cerrar sesión
                     </button>
                 </div>
@@ -138,54 +142,54 @@
         </div>
     </aside>
 
-    <!-- PANEL CENTRAL: Visor Principal -->
-    <main class="flex-1 flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-50/90 z-10 transition-all duration-300">
+    <main class="flex-1 flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-50/90 dark:bg-slate-950/90 z-10 transition-all duration-300">
         
-        <header class="glass-effect border-b border-slate-200 px-8 py-4 flex justify-between items-center shadow-sm">
+        <header class="glass-effect border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex justify-between items-center shadow-sm">
             <div class="flex items-center gap-4">
-                <button id="mainToggleMenuBtn" class="text-slate-500 hover:text-zoo-600 hover:bg-zoo-50 p-2 rounded-lg transition-colors hidden" title="Mostrar Menú">
+                <button id="mainToggleMenuBtn" class="text-slate-500 hover:text-zoo-600 hover:bg-zoo-50 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors hidden" title="Mostrar Menú">
                     <i class="fa-solid fa-bars text-xl"></i>
                 </button>
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                         <i class="fa-solid fa-shield-cat text-zoo-500"></i>
                         Vista del Cuidador
                     </h1>
-                    <p class="text-sm text-slate-500">Tablero de atención a emergencias</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Tablero de atención a emergencias</p>
                 </div>
             </div>
-            <button id="toggleRightPanelBtn" class="md:hidden bg-white border border-slate-200 shadow-sm text-slate-600 p-2 rounded-full hover:bg-zoo-50">
+            <button id="toggleRightPanelBtn" class="md:hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-600 dark:text-slate-300 p-2 rounded-full hover:bg-zoo-50 dark:hover:bg-slate-700">
                 <i class="fa-regular fa-comments"></i>
             </button>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center w-full">
             
-            <div id="alertDetailView" class="bg-white w-full max-w-4xl rounded-3xl shadow-sm border border-slate-200 overflow-hidden opacity-0 translate-y-4 transition-all duration-500 flex flex-col min-h-[400px]">
-                
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div id="alertDetailView" class="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden opacity-0 translate-y-4 transition-all duration-500 flex flex-col min-h-[400px]">
+    
+                <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                     <div class="flex gap-4 items-center">
-                        <div class="w-12 h-12 rounded-full bg-zoo-100 text-zoo-600 flex items-center justify-center text-xl font-bold shadow-inner">US</div>
+                        <div class="w-12 h-12 rounded-full bg-zoo-100 dark:bg-zoo-900/50 text-zoo-600 dark:text-zoo-400 flex items-center justify-center text-xl font-bold shadow-inner">US</div>
                         <div>
-                            <h2 class="text-xl font-bold text-slate-800">Usuario</h2>
-                            <p class="text-sm text-slate-500"><i class="fa-regular fa-clock"></i> Hora del reporte: --:--</p>
+                            <h2 class="text-xl font-bold text-slate-800 dark:text-white">Usuario</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400"><i class="fa-regular fa-clock"></i> Hora del reporte: --:--</p>
                         </div>
                     </div>
-                    <button id="btn-resolver" onclick="resolverAlertaActiva()" class="hidden bg-red-100 text-red-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-200 transition-colors border border-red-200 shadow-sm">
+        
+                    <button id="btn-resolver" onclick="resolverAlertaActiva()" class="hidden bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 shadow-sm">
                         <i class="fa-solid fa-check-double"></i> Marcar Resuelto
                     </button>
                 </div>
 
-                <div id="mensajes-conversacion" class="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar bg-white">
+                <div id="mensajes-conversacion" class="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900">
                     <p class="text-slate-400 text-center mt-10">Selecciona un reporte en el panel derecho para ver el historial.</p>
                 </div>
             </div>
             
         </div>
 
-        <div class="p-6 bg-white border-t border-slate-200 z-10 drop-shadow-2xl">
+        <div class="p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 z-10 drop-shadow-2xl">
             <div class="max-w-4xl mx-auto relative">
-                <input type="text" id="input-respuesta" onkeypress="handleEnterRespuesta(event)" placeholder="Escribe un mensaje al visitante..." class="w-full bg-slate-50 border border-slate-200 text-slate-700 rounded-full pl-6 pr-16 py-4 focus:outline-none focus:ring-2 focus:ring-zoo-500 focus:border-transparent transition-all shadow-inner">
+                <input type="text" id="input-respuesta" onkeypress="handleEnterRespuesta(event)" placeholder="Escribe un mensaje al visitante..." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 dark:placeholder-slate-400 rounded-full pl-6 pr-16 py-4 focus:outline-none focus:ring-2 focus:ring-zoo-500 focus:border-transparent transition-all shadow-inner">
                 
                 <button onclick="enviarRespuestaCuidador()" class="absolute right-2 top-2 bottom-2 bg-zoo-500 hover:bg-zoo-600 text-white rounded-full w-12 flex items-center justify-center transition-colors shadow-md transform hover:scale-105 active:scale-95">
                     <i class="fa-solid fa-paper-plane"></i>
@@ -195,23 +199,20 @@
         </div>
     </main>
 
-    <!-- PANEL DERECHO: Chat / Lista de Alertas -->
-    <aside id="rightPanel" class="w-80 bg-white border-l border-slate-200 flex flex-col transition-all duration-300 relative z-20 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
+    <aside id="rightPanel" class="w-80 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 relative z-20 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
         
-        <!-- Cabecera Derecha y Botón Toggle -->
-        <div class="p-6 border-b border-slate-100 flex items-center justify-center bg-slate-50 relative">
-            <button id="toggleChatBtn" class="absolute -left-5 top-6 w-10 h-10 bg-white border border-slate-200 rounded-full shadow-md flex items-center justify-center text-slate-500 hover:text-zoo-600 hover:bg-zoo-50 transition-all z-30">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900 relative">
+            <button id="toggleChatBtn" class="absolute -left-5 top-6 w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-md flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-zoo-600 dark:hover:text-zoo-400 hover:bg-zoo-50 dark:hover:bg-slate-700 transition-all z-30">
                 <i id="toggleChatIcon" class="fa-solid fa-chevron-right"></i>
             </button>
             
-            <h2 class="font-bold text-slate-700 text-lg flex items-center gap-2">
+            <h2 class="font-bold text-slate-700 dark:text-slate-200 text-lg flex items-center gap-2">
                 <i class="fa-regular fa-comments text-zoo-500"></i>
                 Chat & Alertas
             </h2>
         </div>
 
-        <!-- Lista de Tarjetas de Alertas -->
-        <div id="lista-alertas-derecho" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+        <div id="lista-alertas-derecho" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 dark:bg-slate-900/50">
             <p class="text-center text-sm text-slate-400 mt-10">
                 <i class="fa-solid fa-hand-pointer text-2xl mb-2"></i><br>
                 Selecciona una fecha a la izquierda
@@ -219,83 +220,333 @@
         </div>
     </aside>
 
-    <!-- MODAL DE EMERGENCIA (Página 11 del PDF) -->
     <div id="emergencyModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
-        <!-- Contenedor del Modal -->
-        <div class="bg-white rounded-3xl shadow-2xl w-[90%] max-w-lg overflow-hidden transform scale-90 transition-transform duration-300" id="emergencyModalInner">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-[90%] max-w-lg overflow-hidden transform scale-90 transition-transform duration-300" id="emergencyModalInner">
             
-            <!-- Barra superior estilo ventana -->
-            <div class="bg-slate-100 px-4 py-2 flex justify-end gap-2 border-b border-slate-200">
-                <div class="w-3 h-3 rounded-full bg-slate-300"></div>
-                <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+            <div class="bg-slate-100 dark:bg-slate-800 px-4 py-2 flex justify-end gap-2 border-b border-slate-200 dark:border-slate-700">
+                <div class="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+                <div class="w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-600"></div>
                 <button onclick="closeEmergency()" class="w-3 h-3 rounded-full bg-red-400 hover:bg-red-500 focus:outline-none"></button>
             </div>
 
             <div class="p-8 text-center flex flex-col items-center relative">
                 
-                <!-- Icono de Sonido (Decorativo) -->
-                <button onclick="toggleSound()" id="soundIconBtn" class="absolute bottom-6 right-6 text-slate-400 hover:text-slate-600 text-xl transition-colors">
+                <button onclick="toggleSound()" id="soundIconBtn" class="absolute bottom-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xl transition-colors">
                     <i id="soundIcon" class="fa-solid fa-volume-high"></i>
                 </button>
 
-                <!-- Icono Alerta Animado -->
-                <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(234,179,8,0.4)] animate-pulse relative">
+                <div class="w-24 h-24 bg-yellow-100 dark:bg-yellow-900/50 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(234,179,8,0.4)] animate-pulse relative">
                     <div class="absolute inset-0 bg-yellow-400 rounded-full animate-ping opacity-20"></div>
                     <i class="fa-solid fa-triangle-exclamation text-5xl text-yellow-500"></i>
                 </div>
 
-                <!-- Título -->
-                <h2 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight uppercase mb-6 leading-tight">
-                    Sistema de Alarma de <br> <span class="text-red-600">Emergencia Activada</span>
+                <h2 class="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase mb-6 leading-tight">
+                    Sistema de Alarma de <br> <span class="text-red-600 dark:text-red-500">Emergencia Activada</span>
                 </h2>
 
-                <!-- Datos -->
-                <div class="w-full bg-slate-50 rounded-xl p-4 mb-8 border border-slate-100 text-left">
-                    <p class="text-lg font-medium text-slate-700">Por: <span class="font-bold text-slate-900" id="em-userName">Esteban Sánchez</span></p>
-                    <p class="text-sm text-slate-500 mt-1"><i class="fa-solid fa-location-dot mr-1"></i> Zona Felinos Mayores</p>
+                <div class="w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 mb-8 border border-slate-100 dark:border-slate-700 text-left">
+                    <p class="text-lg font-medium text-slate-700 dark:text-slate-300">Por: <span class="font-bold text-slate-900 dark:text-white" id="em-userName">--</span></p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1" id="em-zona"><i class="fa-solid fa-location-dot mr-1"></i> --</p>
                 </div>
 
-                <!-- Botones de Acción -->
                 <div class="flex flex-col sm:flex-row gap-4 w-full justify-center">
-                    <button onclick="closeEmergency()" class="flex-1 px-6 py-3 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all focus:ring-4 focus:ring-slate-100">
-                        Cerrar
+                    <button onclick="closeEmergency()" class="flex-1 px-6 py-3 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all focus:ring-4 focus:ring-slate-100 dark:focus:ring-slate-700">
+                        Ignorar
                     </button>
-                    <button onclick="readEmergencyMessage()" class="flex-1 px-6 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-[0_4px_14px_0_rgba(220,38,38,0.39)] hover:shadow-[0_6px_20px_rgba(220,38,38,0.23)] transition-all focus:ring-4 focus:ring-red-200 transform hover:-translate-y-0.5">
-                        Leer mensaje
+                    <button id="btn-leer-emergencia" class="flex-1 px-6 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-[0_4px_14px_0_rgba(220,38,38,0.39)] transition-all focus:ring-4 focus:ring-red-200 transform hover:-translate-y-0.5">
+                        Atender emergencia
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- BOTÓN FLOTANTE PARA SIMULAR ALERTA (Solo Demo) -->
-    <button onclick="triggerEmergencyDemo()" class="fixed bottom-6 left-6 z-50 bg-slate-800 text-white px-4 py-3 rounded-full shadow-lg font-medium hover:bg-slate-700 hover:scale-105 transition-all flex items-center gap-2 border border-slate-600 group">
-        <i class="fa-solid fa-bell text-yellow-400 group-hover:animate-wiggle"></i>
-        <span>Simular Emergencia</span>
-    </button>
+    <div id="profileInfoModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-[90%] max-w-2xl overflow-hidden transform scale-90 transition-transform duration-300" id="profileInfoModalInner">
+            
+            <div class="bg-zoo-500 p-8 flex items-center gap-6 text-white relative">
+                <button onclick="cerrarModalPerfil()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-white transition-colors focus:outline-none">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+                
+                <div class="w-24 h-24 rounded-full bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-lg overflow-hidden flex items-center justify-center text-zoo-500 text-4xl shrink-0" id="pi-foto-container">
+                    <i class="fa-solid fa-user-tie" id="pi-foto-icon"></i>
+                    <img id="pi-foto" src="" class="w-full h-full object-cover hidden">
+                </div>
+                <div>
+                    <h2 class="text-3xl font-bold tracking-tight" id="pi-nombre">Cargando...</h2>
+                    <p class="text-zoo-100 font-medium mt-1"><i class="fa-solid fa-shield-cat mr-2"></i>Cuidador Autorizado</p>
+                </div>
+            </div>
 
-    <!-- LOGICA JAVASCRIPT -->
+            <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 bg-slate-50 dark:bg-slate-800/50">
+                <div class="space-y-5">
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1"><i class="fa-regular fa-calendar mr-1"></i> Fecha de Nacimiento</p>
+                        <div class="flex items-center gap-3">
+                            <p class="text-slate-800 dark:text-white font-semibold text-lg" id="pi-fecha-nac">--</p>
+                            <span class="bg-zoo-100 dark:bg-zoo-900/50 text-zoo-700 dark:text-zoo-400 px-2 py-0.5 rounded-md text-xs font-bold" id="pi-edad">-- años</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-map-pin mr-1"></i> Lugar de Nacimiento</p>
+                        <p class="text-slate-800 dark:text-white font-semibold" id="pi-lugar-nac">--</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-earth-americas mr-1"></i> Nacionalidad</p>
+                        <p class="text-slate-800 dark:text-white font-semibold" id="pi-nacionalidad">--</p>
+                    </div>
+                </div>
+
+                <div class="space-y-5">
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-phone mr-1"></i> Teléfono</p>
+                        <p class="text-slate-800 dark:text-white font-semibold" id="pi-telefono">--</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-envelope mr-1"></i> Correo Electrónico</p>
+                        <p class="text-slate-800 dark:text-white font-semibold break-all" id="pi-email">--</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-house-chimney mr-1"></i> Domicilio Completo</p>
+                        <p class="text-slate-800 dark:text-white font-semibold" id="pi-domicilio">--</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="themeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-[90%] max-w-sm overflow-hidden transform scale-90 transition-transform duration-300" id="themeModalInner">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                <h3 class="text-xl font-bold text-slate-800 dark:text-white"><i class="fa-solid fa-palette text-zoo-500 mr-2"></i> Apariencia</h3>
+                <button onclick="cerrarModalTema()" class="text-slate-400 hover:text-red-500 transition-colors w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-slate-700 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-3 bg-white dark:bg-slate-900">
+                <button onclick="aplicarTema('light')" id="btn-theme-light" class="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-zoo-400 dark:hover:border-zoo-500 transition-all group">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-500 flex items-center justify-center text-lg"><i class="fa-solid fa-sun"></i></div>
+                        <span class="font-bold text-slate-700 dark:text-slate-200">Modo Claro</span>
+                    </div>
+                    <i class="fa-solid fa-circle-check text-zoo-500 text-xl opacity-0 transition-opacity" id="check-theme-light"></i>
+                </button>
+
+                <button onclick="aplicarTema('dark')" id="btn-theme-dark" class="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-zoo-400 dark:hover:border-zoo-500 transition-all group">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-500 flex items-center justify-center text-lg"><i class="fa-solid fa-moon"></i></div>
+                        <span class="font-bold text-slate-700 dark:text-slate-200">Modo Oscuro</span>
+                    </div>
+                    <i class="fa-solid fa-circle-check text-zoo-500 text-xl opacity-0 transition-opacity" id="check-theme-dark"></i>
+                </button>
+
+                <button onclick="aplicarTema('system')" id="btn-theme-system" class="w-full flex items-center justify-between p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-zoo-400 dark:hover:border-zoo-500 transition-all group">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-lg"><i class="fa-solid fa-desktop"></i></div>
+                        <span class="font-bold text-slate-700 dark:text-slate-200">Tema del sistema</span>
+                    </div>
+                    <i class="fa-solid fa-circle-check text-zoo-500 text-xl opacity-0 transition-opacity" id="check-theme-system"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="resolveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-[90%] max-w-md overflow-hidden transform scale-90 transition-transform duration-300" id="resolveModalInner">
+            <div class="p-8 text-center flex flex-col items-center">
+                
+                <div class="w-20 h-20 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                    <i class="fa-solid fa-check-double text-4xl text-green-500"></i>
+                </div>
+
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-3">¿Resolver emergencia?</h2>
+                <p class="text-slate-500 dark:text-slate-400 mb-8 text-sm leading-relaxed">
+                    ¿Estás seguro de que la emergencia ha sido resuelta? El chat se cerrará permanentemente para el visitante y no podrán enviar más mensajes.
+                </p>
+
+                <div class="flex flex-col sm:flex-row gap-4 w-full justify-center">
+                    <button onclick="cerrarModalResolucion()" class="flex-1 px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+                        Cancelar
+                    </button>
+                    <button onclick="confirmarResolucion()" class="flex-1 px-4 py-3 bg-green-500 text-white font-bold rounded-xl hover:bg-green-600 shadow-[0_4px_14px_0_rgba(34,197,94,0.39)] transition-all transform hover:-translate-y-0.5">
+                        Sí, resolver
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-[90%] max-w-sm overflow-hidden transform scale-90 transition-transform duration-300" id="helpModalInner">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                <h3 class="text-xl font-bold text-slate-800 dark:text-white"><i class="fa-regular fa-circle-question text-zoo-500 mr-2"></i> Soporte y Ayuda</h3>
+                <button onclick="cerrarModalAyuda()" class="text-slate-400 hover:text-red-500 transition-colors w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-slate-700 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-3 bg-white dark:bg-slate-900">
+                <button onclick="irCentroAyuda()" class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-zoo-400 dark:hover:border-zoo-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-left group">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-500 flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform"><i class="fa-solid fa-book-open"></i></div>
+                    <div>
+                        <span class="block font-bold text-slate-700 dark:text-slate-200">Centro de ayuda</span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Foro de preguntas frecuentes</span>
+                    </div>
+                </button>
+
+                <button onclick="irTerminos()" class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-zoo-400 dark:hover:border-zoo-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-left group">
+                    <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-500 flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform"><i class="fa-solid fa-file-contract"></i></div>
+                    <div>
+                        <span class="block font-bold text-slate-700 dark:text-slate-200">Términos y condiciones</span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Políticas de uso y privacidad</span>
+                    </div>
+                </button>
+
+                <button onclick="abrirModalBug()" class="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-red-400 dark:hover:border-red-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-left group">
+                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 text-red-500 flex items-center justify-center text-lg shrink-0 group-hover:scale-110 transition-transform"><i class="fa-solid fa-bug"></i></div>
+                    <div>
+                        <span class="block font-bold text-slate-700 dark:text-slate-200">Informar un error</span>
+                        <span class="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Reportar fallos técnicos de la plataforma</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="bugModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-[90%] max-w-lg overflow-hidden transform scale-90 transition-transform duration-300" id="bugModalInner">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                <h3 class="text-xl font-bold text-slate-800 dark:text-white"><i class="fa-solid fa-bug text-red-500 mr-2"></i> Reportar Error Técnico</h3>
+                <button onclick="cerrarModalBug()" class="text-slate-400 hover:text-red-500 transition-colors w-8 h-8 rounded-full hover:bg-red-50 dark:hover:bg-slate-700 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Correo para notificaciones *</label>
+                    <input type="email" id="bugContactEmail" placeholder="Tu correo personal (Ej. gmail.com)" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <p class="text-[10px] text-slate-400 mt-1">Recibirás la confirmación y el ID de tu ticket en esta dirección.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Título del problema *</label>
+                    <input type="text" id="bugTitle" placeholder="Ej: No carga el historial de reportes" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Descripción detallada *</label>
+                    <textarea id="bugDescription" rows="4" placeholder="Describe paso a paso qué estabas haciendo..." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"></textarea>
+                </div>
+                
+                <button id="btnEnviarBug" onclick="enviarTicketBug()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-all shadow-md transform hover:-translate-y-0.5 flex justify-center items-center gap-2 mt-2">
+                    <i class="fa-solid fa-paper-plane"></i> Enviar Ticket de Soporte
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="assets/config.js"></script>
     <script>
-        // --- 1. CONFIGURACIÓN Y ESTADO ---
-        const API_URL = "http://127.0.0.1:8000";
+
+        // Inicializar EmailJS
+        emailjs.init("OeAPd9ILG7u-tpUbd"); 
+
+        function abrirModalBug() {
+            cerrarModalAyuda(); 
+            const modal = document.getElementById('bugModal');
+            const modalInner = document.getElementById('bugModalInner');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalInner.classList.remove('scale-90');
+                modalInner.classList.add('scale-100');
+            }, 10);
+
+            // Pre-llenar el correo si el usuario tiene uno
+            if(usuarioActual && usuarioActual.email) {
+                document.getElementById('bugContactEmail').value = usuarioActual.email;
+            }
+        }
+
+        function cerrarModalBug() {
+            const modal = document.getElementById('bugModal');
+            const modalInner = document.getElementById('bugModalInner');
+            
+            modal.classList.add('opacity-0');
+            modalInner.classList.remove('scale-100');
+            modalInner.classList.add('scale-90');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.getElementById('bugContactEmail').value = '';
+                document.getElementById('bugTitle').value = '';
+                document.getElementById('bugDescription').value = '';
+            }, 300);
+        }
+
+        async function enviarTicketBug() {
+            const correoContacto = document.getElementById('bugContactEmail').value.trim();
+            const titulo = document.getElementById('bugTitle').value.trim();
+            const descripcion = document.getElementById('bugDescription').value.trim();
+            const btn = document.getElementById('btnEnviarBug');
+
+            if (!correoContacto || !titulo || !descripcion) {
+                alert("Por favor completa todos los campos del formulario.");
+                return;
+            }
+
+            // Generar Ticket ID (Ej: ZOO-TK-4829)
+            const ticketId = "ZOO-TK-" + Math.floor(1000 + Math.random() * 9000);
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+
+            const templateParams = {
+                ticket_id: ticketId,
+                user_name: usuarioActual.nombre,
+                contact_email: correoContacto, // Este es el campo clave para EmailJS
+                bug_title: titulo,
+                bug_description: descripcion
+            };
+
+            try {
+                // 1. Enviar el correo usando EmailJS
+                await emailjs.send("service_xb5ph8a", "template_ieodknl", templateParams);
+
+                // 2. Guardar el ticket en tu backend para que el admin lo vea
+                await fetch(`${API_URL}/tickets/nuevo`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(templateParams)
+                });
+
+                alert(`¡Reporte enviado con éxito!\n\nTu número de ticket es ${ticketId}.\nHemos enviado una copia de este reporte a ${correoContacto}.`);
+                cerrarModalBug();
+
+            } catch (error) {
+                console.error("Error al enviar el ticket:", error);
+                alert("Hubo un error al enviar el reporte. Por favor, intenta de nuevo.");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Enviar Ticket de Soporte';
+            }
+        }
+        const API_URL = API_BASE_URL;
+        
         let usuarioActual = null;
+        let audioEmergencia = null;
 
-        // ========================================================
-        // UTILIDADES DE RESALTADO DE TEXTO (SEARCH HIGHLIGHT)
-        // ========================================================
-
-        // 1. Función principal: Resalta texto simple (usado en chats de usuario)
         function resaltarTextoSimple(texto, query) {
             if (!query || query.trim() === "" || !texto) return texto;
-            const term = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escapar caracteres especiales de Regex
-            const regex = new RegExp(`(${term})`, "gi"); // Busqueda global insensible a mayúsculas
+            const term = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${term})`, "gi");
             const markStart = `<mark class="bg-blue-200 text-blue-800 rounded px-0.5 font-bold shadow-sm">`;
             const markEnd = `</mark>`;
             return texto.replace(regex, `${markStart}$1${markEnd}`);
         }
 
-        // 2. Función avanzada: Recorre nodos HTML y resalta solo texto visible (usado en chats de IA con Markdown)
-        // Esto previene que resaltemos coincidencias dentro de atributos HTML (como href o src)
         function resaltarNodosTextoVisibles(element, query) {
             if (!element || !query) return;
             const term = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -305,23 +556,21 @@
 
             element.childNodes.forEach(node => {
                 if (node.nodeType === Node.TEXT_NODE) {
-                    // Si es un nodo de texto puro, aplicamos el resaltado
                     const text = node.textContent;
                     if (regex.test(text)) {
                         const highlightedText = text.replace(regex, `${markStart}$1${markEnd}`);
-                        const span = document.createElement('span'); // Wrapper span para insertar HTML
+                        const span = document.createElement('span');
                         span.innerHTML = highlightedText;
-                        node.parentNode.replaceChild(span, node); // Reemplazamos el nodo de texto original
+                        node.parentNode.replaceChild(span, node);
                     }
                 } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'CODE' && node.tagName !== 'PRE') {
-                    // Si es otro elemento, llamamos recursivamente, pero EXCLUIMOS bloques de código
                     resaltarNodosTextoVisibles(node, query);
                 }
             });
         }
 
-        let alertasAgrupadas = {}; // Aquí guardaremos los datos agrupados por fecha
-        let conversacionSeleccionada = null; // Agrega esto debajo de let alertasAgrupadas = {};
+        let alertasAgrupadas = {};
+        let conversacionSeleccionada = null;
         let intervaloCuidador = null;
 
         const state = {
@@ -331,7 +580,6 @@
             soundOn: true
         };
 
-        // --- 2. CONTROL DE ACCESO ---
         window.onload = async () => {
             const token = localStorage.getItem('access_token');
             const usuarioStr = localStorage.getItem('usuario');
@@ -357,67 +605,86 @@
             };
 
             cargarAlertasBackend();
+            setInterval(cargarAlertasBackend, 3000);
         };
 
-        // --- 3. CONEXIÓN Y AGRUPACIÓN DE DATOS ---
+        let ultimoIdAlerta = 0;
+        let primeraCarga = true;
+        let cantidadAlertasGuardadas = -1;
+
         async function cargarAlertasBackend() {
             try {
                 const response = await fetch(`${API_URL}/cuidador/alertas?user_id=${usuarioActual.id}`);
                 const data = await response.json();
 
                 if (response.ok) {
-                    agruparAlertasPorFecha(data.alertas);
-                    renderPanelIzquierdoFechas();
+                    if (data.alertas.length > 0) {
+                        const alertasOrdenadas = [...data.alertas].sort((a, b) => b.id - a.id);
+                        const topAlerta = alertasOrdenadas[0];
+
+                        if (primeraCarga) {
+                            ultimoIdAlerta = topAlerta.id;
+                            primeraCarga = false;
+                        } else {
+                            const nuevasAlertas = alertasOrdenadas.filter(a => a.id > ultimoIdAlerta && a.estado !== 'resuelto');
+                            if (nuevasAlertas.length > 0) {
+                                mostrarModalEmergenciaReal(nuevasAlertas[0]);
+                                ultimoIdAlerta = topAlerta.id;
+                            }
+                        }
+                    } else {
+                        primeraCarga = false;
+                    }
+
+                    if (data.alertas.length !== cantidadAlertasGuardadas) {
+                        agruparAlertasPorFecha(data.alertas);
+                        renderPanelIzquierdoFechas();
+                        cantidadAlertasGuardadas = data.alertas.length;
+                    }
+
                 } else {
-                    document.getElementById('alertas-lista').innerHTML = `<p class="text-red-500 text-center mt-10">${data.detail}</p>`;
+                    if(primeraCarga) document.getElementById('alertas-lista').innerHTML = `<p class="text-red-500 text-center mt-10">${data.detail}</p>`;
                 }
             } catch (error) {
-                document.getElementById('alertas-lista').innerHTML = `<p class="text-red-500 text-center mt-10">Error de servidor</p>`;
+                if(primeraCarga) document.getElementById('alertas-lista').innerHTML = `<p class="text-red-500 text-center mt-10">Error de servidor</p>`;
             }
         }
 
         function agruparAlertasPorFecha(alertas) {
-            alertasAgrupadas = {}; // Limpiar
+            alertasAgrupadas = {};
             const hoyStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
             alertas.forEach(a => {
-                // a.fecha viene como "DD/MM/YYYY HH:MM"
                 const fechaCorta = a.fecha.split(' ')[0];
                 let etiquetaFecha = fechaCorta;
-                
-                // Darle el nombre "Hoy" si coincide con la fecha actual
                 if (fechaCorta === hoyStr) etiquetaFecha = "Hoy";
-
                 if (!alertasAgrupadas[etiquetaFecha]) alertasAgrupadas[etiquetaFecha] = [];
                 alertasAgrupadas[etiquetaFecha].push(a);
             });
         }
 
-        // --- 4. RENDERIZADO DE PANELES ---
-
-        // PANEL IZQUIERDO: Muestra solo las fechas
         function renderPanelIzquierdoFechas() {
             const contenedor = document.getElementById('alertas-lista');
             contenedor.innerHTML = '';
 
             const fechas = Object.keys(alertasAgrupadas);
             if (fechas.length === 0) {
-                contenedor.innerHTML = `<p class="text-sm text-slate-500 text-center mt-10">No hay reportes.</p>`;
+                contenedor.innerHTML = `<p class="text-sm text-slate-500 dark:text-slate-400 text-center mt-10">No hay reportes.</p>`;
                 return;
             }
 
             fechas.forEach(fecha => {
                 const numAlertas = alertasAgrupadas[fecha].length;
                 contenedor.innerHTML += `
-                    <button class="w-full bg-white border border-slate-200 hover:border-zoo-500 text-left px-4 py-3 rounded-xl transition-all group flex flex-col gap-1 mb-4 shadow-sm"
+                    <button class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-zoo-500 dark:hover:border-zoo-400 text-left px-4 py-3 rounded-xl transition-all group flex flex-col gap-1 mb-4 shadow-sm"
                             onclick="seleccionarFechaEnDerecho('${fecha}')">
                         <div class="flex justify-between items-center w-full">
-                            <span class="font-bold text-slate-800 text-lg group-hover:text-zoo-600 transition-colors">
+                            <span class="font-bold text-slate-800 dark:text-slate-200 text-lg group-hover:text-zoo-600 dark:group-hover:text-zoo-400 transition-colors">
                                 <i class="fa-regular fa-calendar-check text-zoo-500 mr-1"></i> ${fecha}
                             </span>
-                            <span class="bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full text-xs animate-pulse">${numAlertas}</span>
+                            <span class="bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 font-bold px-2 py-0.5 rounded-full text-xs animate-pulse">${numAlertas}</span>
                         </div>
-                        <div class="mt-2 text-zoo-600 font-bold text-sm flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        <div class="mt-2 text-zoo-600 dark:text-zoo-400 font-bold text-sm flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                             Ver mensajes <i class="fa-solid fa-arrow-right text-xs"></i>
                         </div>
                     </button>
@@ -425,7 +692,6 @@
             });
         }
 
-        // PANEL DERECHO: Muestra los reportes de la fecha seleccionada
         function seleccionarFechaEnDerecho(fecha) {
             const alertasDeEsaFecha = alertasAgrupadas[fecha];
             const panelDerecho = document.getElementById('lista-alertas-derecho');
@@ -433,28 +699,27 @@
             if(!state.rightPanelOpen) toggleRight();
 
             panelDerecho.innerHTML = `
-                <div class="mb-4 pb-2 border-b border-slate-200">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Mostrando reportes de:</span>
-                    <h3 class="text-lg font-bold text-slate-700">${fecha}</h3>
+                <div class="mb-4 pb-2 border-b border-slate-200 dark:border-slate-700">
+                    <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase">Mostrando reportes de:</span>
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-200">${fecha}</h3>
                 </div>
             `;
 
             panelDerecho.innerHTML += alertasDeEsaFecha.map(a => `
-                <div class="bg-white border-2 border-transparent hover:border-zoo-400 rounded-xl overflow-hidden shadow-sm cursor-pointer transform transition-all hover:-translate-y-1 hover:shadow-md mb-3"
-                     onclick="mostrarDetalleEnCentro(${a.id}, '${a.usuario}', '${a.titulo}', '${a.fecha.split(' ')[1]}', '${a.estado}')">
-                    <div class="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                        <span class="font-bold text-sm text-slate-800 truncate pr-2"><i class="fa-solid fa-user-circle text-slate-400 mr-1"></i> ${a.usuario}</span>
-                        <span class="text-xs text-slate-500 font-medium whitespace-nowrap"><i class="fa-regular fa-clock"></i> ${a.fecha.split(' ')[1]}</span>
+                <div class="bg-white dark:bg-slate-800 border-2 border-transparent hover:border-zoo-400 dark:hover:border-zoo-500 rounded-xl overflow-hidden shadow-sm cursor-pointer transform transition-all hover:-translate-y-1 hover:shadow-md mb-3"
+                    onclick="mostrarDetalleEnCentro(${a.id}, '${a.usuario}', '${a.titulo}', '${a.fecha.split(' ')[1]}', '${a.estado}')">
+                    <div class="p-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                        <span class="font-bold text-sm text-slate-800 dark:text-slate-200 truncate pr-2"><i class="fa-solid fa-user-circle text-slate-400 mr-1"></i> ${a.usuario}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap"><i class="fa-regular fa-clock"></i> ${a.fecha.split(' ')[1]}</span>
                     </div>
-                    <div class="p-3 bg-white">
-                        <p class="text-sm font-semibold text-slate-700 truncate">${a.titulo}</p>
+                    <div class="p-3 bg-white dark:bg-slate-800">
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">${a.titulo}</p>
                         <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-eye text-zoo-400"></i> Clic para abrir detalle</p>
                     </div>
                 </div>
             `).join('');
         }
 
-        // PANEL CENTRAL: Muestra el detalle al dar clic en la derecha
         async function mostrarDetalleEnCentro(idConversacion, nombreUsuario, titulo, hora, estado) {
             conversacionSeleccionada = idConversacion;
             const detailView = document.getElementById('alertDetailView');
@@ -469,9 +734,8 @@
             const btnEnviar = document.querySelector('button[onclick="enviarRespuestaCuidador()"]');
             const btnResolver = document.getElementById('btn-resolver');
 
-            // --- MAGIA DE BLOQUEO ---
             if (estado === 'resuelto') {
-                btnResolver.className = 'bg-green-100 text-green-600 px-4 py-2 rounded-xl text-sm font-bold border border-green-200 shadow-sm cursor-not-allowed';
+                btnResolver.className = 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-4 py-2 rounded-xl text-sm font-bold border border-green-200 dark:border-green-800 shadow-sm cursor-not-allowed';
                 btnResolver.innerHTML = '<i class="fa-solid fa-lock"></i> Resuelta';
                 btnResolver.disabled = true;
                 
@@ -481,7 +745,7 @@
                 }
                 if (btnEnviar) btnEnviar.disabled = true;
             } else {
-                btnResolver.className = 'bg-red-100 text-red-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-200 transition-colors border border-red-200 shadow-sm cursor-pointer';
+                btnResolver.className = 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-xl text-sm font-bold hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 shadow-sm cursor-pointer';
                 btnResolver.innerHTML = '<i class="fa-solid fa-check-double"></i> Marcar Resuelto';
                 btnResolver.disabled = false;
 
@@ -506,15 +770,15 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    let htmlFinal = `<h3 class="font-bold text-slate-800 text-xl border-b pb-2 mb-4">Asunto: ${titulo}</h3>`;
-                    
+                    let htmlFinal = `<h3 class="font-bold text-slate-800 dark:text-white text-xl border-b dark:border-slate-700 pb-2 mb-4">Asunto: ${titulo}</h3>`;
+
                     if (data.mensajes && data.mensajes.length > 0) {
                         htmlFinal += data.mensajes.map(msg => {
                             const esVisitante = msg.role === 'Usuario';
                             const remitente = esVisitante ? nombreUsuario : 'Zoopedia IA / Cuidador';
                             
                             const imgEvidencia = msg.imagen_base64 
-                                ? `<div class="mt-2 mb-1"><img src="${msg.imagen_base64}" class="w-full max-w-sm rounded-xl shadow-md border-2 border-white cursor-pointer hover:scale-105 transition-transform" onclick="window.open('${msg.imagen_base64}', '_blank')"></div>` 
+                                ? `<div class="mt-2 mb-1"><img src="${msg.imagen_base64}" class="w-full max-w-sm rounded-xl shadow-md border-2 border-white dark:border-slate-700 cursor-pointer hover:scale-105 transition-transform" onclick="window.open('${msg.imagen_base64}', '_blank')"></div>` 
                                 : '';
                             
                             return `
@@ -522,8 +786,8 @@
                                 <span class="text-[10px] text-slate-400 mb-1 mx-2">${remitente}</span>
                                 <div class="px-5 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm
                                     ${esVisitante 
-                                        ? 'bg-slate-100 text-slate-700 rounded-tl-none border border-slate-200' 
-                                        : 'bg-emerald-50 text-emerald-900 rounded-tr-none border border-emerald-200'}">
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200 dark:border-slate-700' 
+                                        : 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-100 rounded-tr-none border border-emerald-200 dark:border-emerald-800/50'}">
                                     ${msg.content}
                                     ${imgEvidencia}
                                 </div>
@@ -545,13 +809,11 @@
             }
         
             if(intervaloCuidador) clearInterval(intervaloCuidador);
-            // Solo seguimos refrescando si NO está resuelto
             if (estado !== 'resuelto') {
                 intervaloCuidador = setInterval(() => recargarMensajesEnVivo(idConversacion, nombreUsuario, titulo), 3000);
             }
         }
 
-        // --- 5. LÓGICA DE INTERFAZ (Toggles y Menús) ---
         const leftPanel = document.getElementById('leftPanel');
         const rightPanel = document.getElementById('rightPanel');
         const toggleMenuBtn = document.getElementById('toggleMenuBtn');
@@ -645,7 +907,7 @@
                 }
             });
         }
-        // --- 6. LÓGICA PARA ENVIAR RESPUESTAS ---
+
         async function enviarRespuestaCuidador() {
             if (!conversacionSeleccionada) {
                 alert("Primero selecciona una conversación en el panel derecho.");
@@ -656,15 +918,13 @@
             const texto = inputField.value.trim();
             if (!texto) return;
 
-            // 1. Limpiamos la caja de texto visualmente
             inputField.value = '';
 
-            // 2. Dibujamos el mensaje del cuidador inmediatamente en la pantalla (Efecto optimista)
             const contenedor = document.getElementById('mensajes-conversacion');
             const msgHTML = `
                 <div class="flex flex-col items-end mb-4 animate-fade-in-up">
                     <span class="text-[10px] text-slate-400 mb-1 mx-2">Tú (Cuidador)</span>
-                    <div class="px-5 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm bg-emerald-50 text-emerald-900 rounded-tr-none border border-emerald-200">
+                    <div class="px-5 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm bg-emerald-50 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-100 rounded-tr-none border border-emerald-200 dark:border-emerald-800/50">
                         ${texto}
                     </div>
                 </div>
@@ -672,7 +932,6 @@
             contenedor.insertAdjacentHTML('beforeend', msgHTML);
             contenedor.scrollTop = contenedor.scrollHeight;
 
-            // 3. Enviamos el mensaje a la base de datos de manera silenciosa
             try {
                 const response = await fetch(`${API_URL}/chat/mensaje_cuidador`, {
                     method: 'POST',
@@ -698,28 +957,53 @@
             }
         }
 
-        async function resolverAlertaActiva() {
+        function resolverAlertaActiva() {
             if (!conversacionSeleccionada) return;
-            if(confirm("¿Estás seguro de que la emergencia ha sido resuelta? El chat se cerrará para el visitante.")){
-                await fetch(`${API_URL}/chat/resolver/${conversacionSeleccionada}`, { method: 'POST' });
-                
-                // Actualizar botón a verde al instante
-                const btnResolver = document.getElementById('btn-resolver');
-                btnResolver.className = 'bg-green-100 text-green-600 px-4 py-2 rounded-xl text-sm font-bold border border-green-200 shadow-sm cursor-not-allowed';
-                btnResolver.innerHTML = '<i class="fa-solid fa-lock"></i> Resuelta';
-                btnResolver.disabled = true;
-                
-                // Bloquear input
-                const chatInput = document.getElementById('input-respuesta');
-                const btnEnviar = document.querySelector('button[onclick="enviarRespuestaCuidador()"]');
-                chatInput.disabled = true;
-                chatInput.value = "";
-                chatInput.placeholder = "Este reporte ya fue atendido y cerrado.";
-                btnEnviar.disabled = true;
+            const modal = document.getElementById('resolveModal');
+            const modalInner = document.getElementById('resolveModalInner');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalInner.classList.remove('scale-90');
+                modalInner.classList.add('scale-100');
+            }, 10);
+        }
 
-                if(intervaloCuidador) clearInterval(intervaloCuidador);
-                cargarAlertasBackend(); // Recargar el panel izquierdo
-            }
+        function cerrarModalResolucion() {
+            const modal = document.getElementById('resolveModal');
+            const modalInner = document.getElementById('resolveModalInner');
+            
+            modal.classList.add('opacity-0');
+            modalInner.classList.remove('scale-100');
+            modalInner.classList.add('scale-90');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        async function confirmarResolucion() {
+            if (!conversacionSeleccionada) return;
+            
+            cerrarModalResolucion();
+            
+            await fetch(`${API_URL}/chat/resolver/${conversacionSeleccionada}`, { method: 'POST' });
+            
+            const btnResolver = document.getElementById('btn-resolver');
+            btnResolver.className = 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-4 py-2 rounded-xl text-sm font-bold border border-green-200 dark:border-green-800 shadow-sm cursor-not-allowed';
+            btnResolver.innerHTML = '<i class="fa-solid fa-lock"></i> Resuelta';
+            btnResolver.disabled = true;
+            
+            const chatInput = document.getElementById('input-respuesta');
+            const btnEnviar = document.querySelector('button[onclick="enviarRespuestaCuidador()"]');
+            chatInput.disabled = true;
+            chatInput.value = "";
+            chatInput.placeholder = "Este reporte ya fue atendido y cerrado.";
+            btnEnviar.disabled = true;
+
+            if(intervaloCuidador) clearInterval(intervaloCuidador);
+            cargarAlertasBackend();
         }
 
         async function recargarMensajesEnVivo(idConversacion, nombreUsuario, titulo) {
@@ -731,21 +1015,23 @@
                     const numMensajesActuales = contenedorMensajes.querySelectorAll('.flex-col').length;
                     
                     if (data.mensajes.length > numMensajesActuales) {
-                        let htmlFinal = `<h3 class="font-bold text-slate-800 text-xl border-b pb-2 mb-4">Asunto: ${titulo}</h3>`;
+                        let htmlFinal = `<h3 class="font-bold text-slate-800 dark:text-white text-xl border-b dark:border-slate-700 pb-2 mb-4">Asunto: ${titulo}</h3>`;
+
                         htmlFinal += data.mensajes.map(msg => {
                             const esVisitante = msg.role === 'Usuario';
                             const remitente = esVisitante ? nombreUsuario : 'Zoopedia IA / Cuidador';
                             
-                            // Lógica de la imagen inyectada
                             const imgEvidencia = msg.imagen_base64 
-                                ? `<div class="mt-2 mb-1"><img src="${msg.imagen_base64}" class="w-full max-w-sm rounded-xl shadow-md border-2 border-white cursor-pointer hover:scale-105 transition-transform" onclick="window.open('${msg.imagen_base64}', '_blank')"></div>` 
+                                ? `<div class="mt-2 mb-1"><img src="${msg.imagen_base64}" class="w-full max-w-sm rounded-xl shadow-md border-2 border-white dark:border-slate-700 cursor-pointer hover:scale-105 transition-transform" onclick="window.open('${msg.imagen_base64}', '_blank')"></div>` 
                                 : '';
                                 
                             return `
                             <div class="flex flex-col ${esVisitante ? 'items-start' : 'items-end'} mb-4 animate-fade-in-up">
                                 <span class="text-[10px] text-slate-400 mb-1 mx-2">${remitente}</span>
                                 <div class="px-5 py-3 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm
-                                    ${esVisitante ? 'bg-slate-100 text-slate-700 rounded-tl-none border border-slate-200' : 'bg-emerald-50 text-emerald-900 rounded-tr-none border border-emerald-200'}">
+                                    ${esVisitante 
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-tl-none border border-slate-200 dark:border-slate-700' 
+                                        : 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-100 rounded-tr-none border border-emerald-200 dark:border-emerald-800/50'}">
                                     ${msg.content}
                                     ${imgEvidencia}
                                 </div>
@@ -757,6 +1043,250 @@
                     }
                 }
             } catch (e) {}
+        }
+
+        function mostrarModalEmergenciaReal(alerta) {
+            const zonaStr = alerta.titulo.replace("Emergencia: ", "");
+            
+            document.getElementById('em-userName').innerText = alerta.usuario;
+            document.getElementById('em-zona').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i> ${zonaStr}`;
+
+            const btnLeer = document.getElementById('btn-leer-emergencia');
+            if (btnLeer) {
+                const hora = alerta.fecha.split(' ')[1];
+                btnLeer.onclick = () => {
+                    closeEmergency();
+                    mostrarDetalleEnCentro(alerta.id, alerta.usuario, alerta.titulo, hora, alerta.estado);
+                };
+            }
+
+            const modal = document.getElementById('emergencyModal');
+            const modalInner = document.getElementById('emergencyModalInner');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalInner.classList.remove('scale-90');
+                modalInner.classList.add('scale-100');
+            }, 10);
+            
+            if (state.soundOn) {
+                if (audioEmergencia) {
+                    audioEmergencia.pause();
+                    audioEmergencia.currentTime = 0;
+                }
+                audioEmergencia = new Audio('assets/audio/alerta.mp3');
+                audioEmergencia.loop = true; 
+                audioEmergencia.play().catch(e => {
+                    console.log("El navegador bloqueó el audio. Se requiere interacción previa del cuidador.");
+                });
+            }
+        }
+
+        function closeEmergency() {
+            if (audioEmergencia) {
+                audioEmergencia.pause();
+                audioEmergencia.currentTime = 0;
+            }
+
+            const modal = document.getElementById('emergencyModal');
+            const modalInner = document.getElementById('emergencyModalInner');
+            
+            modal.classList.add('opacity-0');
+            modalInner.classList.remove('scale-100');
+            modalInner.classList.add('scale-90');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function toggleSound() {
+            state.soundOn = !state.soundOn;
+            const icon = document.getElementById('soundIcon');
+            icon.className = state.soundOn ? "fa-solid fa-volume-high" : "fa-solid fa-volume-xmark text-red-400";
+        }
+
+        function calcularEdad(fechaString) {
+            if (!fechaString || fechaString === 'None' || fechaString === 'null') return '--';
+            const nacimiento = new Date(fechaString + 'T00:00:00');
+            if (isNaN(nacimiento.getTime())) return '--'; 
+            
+            const hoy = new Date();
+            let edad = hoy.getFullYear() - nacimiento.getFullYear();
+            const mes = hoy.getMonth() - nacimiento.getMonth();
+            if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+                edad--;
+            }
+            return edad;
+        }
+
+        async function abrirModalPerfil() {
+            state.profileMenuOpen = false;
+            document.getElementById('profileMenu').classList.add('opacity-0', 'invisible', 'translate-y-6', 'scale-75');
+
+            const modal = document.getElementById('profileInfoModal');
+            const modalInner = document.getElementById('profileInfoModalInner');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalInner.classList.remove('scale-90');
+                modalInner.classList.add('scale-100');
+            }, 10);
+
+            try {
+                const response = await fetch(`${API_URL}/cuidador/perfil/${usuarioActual.id}`);
+                const data = await response.json();
+                
+                if (response.ok && data.perfil) {
+                    const p = data.perfil;
+                    
+                    document.getElementById('pi-nombre').innerText = p.nombre || 'No definido';
+                    document.getElementById('pi-fecha-nac').innerText = p.fecha_nac || 'No definida';
+                    document.getElementById('pi-edad').innerText = `${calcularEdad(p.fecha_nac)} años`;
+                    document.getElementById('pi-lugar-nac').innerText = p.lugar_nacimiento || 'No registrado';
+                    document.getElementById('pi-nacionalidad').innerText = p.nacionalidad || 'No registrada';
+                    document.getElementById('pi-telefono').innerText = p.telefono || 'No registrado';
+                    document.getElementById('pi-email').innerText = p.email || 'No registrado';
+                    document.getElementById('pi-domicilio').innerText = p.domicilio || 'No registrado';
+
+                    if (p.foto_perfil) {
+                        document.getElementById('pi-foto-icon').classList.add('hidden');
+                        document.getElementById('pi-foto').src = p.foto_perfil;
+                        document.getElementById('pi-foto').classList.remove('hidden');
+                    } else {
+                        document.getElementById('pi-foto-icon').classList.remove('hidden');
+                        document.getElementById('pi-foto').classList.add('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error("Error al cargar la información del perfil:", error);
+            }
+        }
+
+        function cerrarModalPerfil() {
+            const modal = document.getElementById('profileInfoModal');
+            const modalInner = document.getElementById('profileInfoModalInner');
+            
+            modal.classList.add('opacity-0');
+            modalInner.classList.remove('scale-100');
+            modalInner.classList.add('scale-90');
+            
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        // Escuchar cambios de tema del sistema en tiempo real
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            // Solo cambiamos la interfaz si el usuario está en "Tema del sistema" (no hay tema guardado)
+            if (!('theme' in localStorage)) {
+                if (e.matches) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+        });
+
+        function abrirModalTema() {
+            state.profileMenuOpen = false;
+            document.getElementById('profileMenu').classList.add('opacity-0', 'invisible', 'translate-y-6', 'scale-75');
+
+            const modal = document.getElementById('themeModal');
+            const modalInner = document.getElementById('themeModalInner');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalInner.classList.remove('scale-90');
+                modalInner.classList.add('scale-100');
+            }, 10);
+            
+            const temaActual = localStorage.getItem('theme') || 'system';
+            actualizarChecksTema(temaActual);
+        }
+
+        function cerrarModalTema() {
+            const modal = document.getElementById('themeModal');
+            const modalInner = document.getElementById('themeModalInner');
+            
+            modal.classList.add('opacity-0');
+            modalInner.classList.remove('scale-100');
+            modalInner.classList.add('scale-90');
+            
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function aplicarTema(modo) {
+            if (modo === 'system') {
+                localStorage.removeItem('theme');
+            } else {
+                localStorage.setItem('theme', modo);
+            }
+            
+            if (modo === 'dark' || (modo === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            
+            actualizarChecksTema(modo);
+        }
+
+        function actualizarChecksTema(modoActivo) {
+            ['light', 'dark', 'system'].forEach(modo => {
+                document.getElementById(`check-theme-${modo}`).classList.add('opacity-0');
+                document.getElementById(`btn-theme-${modo}`).classList.remove('border-zoo-500', 'bg-zoo-50');
+                document.getElementById(`btn-theme-${modo}`).classList.add('border-slate-200');
+            });
+            
+            document.getElementById(`check-theme-${modoActivo}`).classList.remove('opacity-0');
+            document.getElementById(`btn-theme-${modoActivo}`).classList.remove('border-slate-200');
+            document.getElementById(`btn-theme-${modoActivo}`).classList.add('border-zoo-500', 'bg-zoo-50');
+        }
+
+        function abrirModalAyuda() {
+            // Oculta el menú desplegable del perfil
+            state.profileMenuOpen = false;
+            document.getElementById('profileMenu').classList.add('opacity-0', 'invisible', 'translate-y-6', 'scale-75');
+
+            // Abre el modal de Ayuda
+            const modal = document.getElementById('helpModal');
+            const modalInner = document.getElementById('helpModalInner');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalInner.classList.remove('scale-90');
+                modalInner.classList.add('scale-100');
+            }, 10);
+        }
+
+        function cerrarModalAyuda() {
+            const modal = document.getElementById('helpModal');
+            const modalInner = document.getElementById('helpModalInner');
+            
+            modal.classList.add('opacity-0');
+            modalInner.classList.remove('scale-100');
+            modalInner.classList.add('scale-90');
+            
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function irCentroAyuda() {
+            // La magia: le pasamos "?origen=cuidador" en la URL
+            window.location.href = "foro_dudas.html?origen=cuidador";
+        }
+
+        function irTerminos() {
+            // Pasamos el parámetro de origen para que el botón de regresar sepa a dónde volver
+            window.location.href = "terminos.html?origen=cuidador";
         }
     </script>
 </body>

@@ -3,9 +3,13 @@ echo =========================================
 echo   Iniciando Zoopedia - Modo Demo Avanzado
 echo =========================================
 
-:: 1. Iniciar el backend en una nueva ventana
+:: 1. Iniciar el backend en una nueva ventana (MODIFICADO)
+echo Actualizando dirección de red...
+call venv\Scripts\activate
+python actualizar_ip.py
+
 echo Iniciando el servidor FastAPI y el motor de IA...
-start "Backend Zoopedia" cmd /k "call venv\Scripts\activate && cd backend && uvicorn main_api:app --reload"
+start "Backend Zoopedia" cmd /k "call venv\Scripts\activate && cd backend && uvicorn main_api:app --host 0.0.0.0 --port 8000 --reload"
 
 :: 2. Escáner dinámico: Esperar a que el puerto 8000 se abra
 echo Esperando a que el servidor indique "Application startup complete"...

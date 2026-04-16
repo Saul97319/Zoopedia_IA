@@ -155,6 +155,9 @@
                 <button onclick="switchTab('logs')" id="tab-logs" class="tab-btn flex-1 py-3 px-4 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-comments"></i> <span class="hidden md:inline">Logs Chat</span>
                 </button>
+                <button onclick="switchTab('tickets')" id="tab-tickets" class="tab-btn flex-1 py-3 px-4 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-bug"></i> <span class="hidden md:inline">Soporte Técnico</span>
+                </button>
             </div>
 
             <div id="content-usuarios" class="tab-content animate-slide-in">
@@ -261,6 +264,32 @@
                 </div>
                 <div class="space-y-6" id="logs-list"></div>
             </div>
+            <div id="content-tickets" class="tab-content hidden">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <h2 class="text-3xl font-extrabold text-slate-800"><i class="fa-solid fa-ticket text-orange-500 mr-2"></i> Tickets de Soporte</h2>
+                    <button onclick="cargarTickets()" class="bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-xl font-bold shadow-sm transition flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-rotate-right"></i> Actualizar
+                    </button>
+                </div>
+
+                <div class="glass-card rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/80 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                                    <th class="p-4 font-bold">Ticket ID</th>
+                                    <th class="p-4 font-bold">Usuario & Contacto</th>
+                                    <th class="p-4 font-bold">Detalle del Error</th>
+                                    <th class="p-4 font-bold text-right">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-tickets" class="divide-y divide-slate-100 text-sm bg-white">
+                                <tr><td colspan="4" class="text-center p-8 text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando tickets...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
         </main>
     </div>
@@ -275,48 +304,65 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-1">Nombre Completo *</label>
-                        <input type="text" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        <input type="text" id="new-nombre" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-1">Email *</label>
-                        <input type="email" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        <input type="email" id="new-email" required onblur="verificarCorreoNuevo(this.value)" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none transition-colors">
+                        <p id="error-email-new" class="hidden text-red-500 text-[11px] mt-1 font-bold leading-tight">Este correo ya existe, coloca un correo que no haya sido vinculado a esta plataforma.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-1">Contraseña *</label>
-                        <input type="password" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        <div class="relative">
+                            <input type="password" id="new-password" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none pr-10">
+                            <button type="button" onclick="togglePasswordVisibility('new-password', 'eye-icon-new')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-blue-500 transition-colors focus:outline-none">
+                                <i id="eye-icon-new" class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-1">Rol *</label>
-                        <select class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none" onchange="toggleRoleFields(this.value)">
+                        <select id="new-rol" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none" onchange="toggleRoleFields(this.value, 'new')">
                             <option value="Visitante">Visitante</option>
                             <option value="Cuidador">Cuidador</option>
                         </select>
                     </div>
                 </div>
+                
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-4">
-                    <p class="text-sm font-bold text-blue-600 mb-3"><i class="fa-solid fa-circle-info"></i> Información Adicional</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <p class="text-sm font-bold text-blue-600 mb-3"><i class="fa-solid fa-circle-info"></i> Datos Base</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-bold text-slate-600 mb-1">Teléfono</label>
-                            <input type="tel" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                            <input type="tel" id="new-telefono" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Fecha Nac. (YYYY-MM-DD)</label>
+                            <input type="date" id="new-fecha-nac" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-slate-600 mb-1">Género</label>
-                            <select class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                            <select id="new-genero" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
                                 <option>Masculino</option>
                                 <option>Femenino</option>
                                 <option>Otro</option>
                             </select>
                         </div>
-                        <div id="cuidador-fields" class="col-span-1 md:col-span-2 hidden grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-bold text-slate-600 mb-1">Nacionalidad</label>
-                                <input type="text" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-bold text-slate-600 mb-1">Edad</label>
-                                <input type="number" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
-                            </div>
+                    </div>
+
+                    <div id="new-cuidador-fields" class="hidden grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 mt-4 pt-4">
+                        <div class="md:col-span-2 text-xs font-bold text-amber-600 uppercase mb-1">Información Exclusiva de Cuidador</div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Nacionalidad</label>
+                            <input type="text" id="new-nacionalidad" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-amber-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Lugar de Nacimiento</label>
+                            <input type="text" id="new-lugar-nac" placeholder="Ej. Zapopan, Jalisco" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-amber-500 outline-none">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Domicilio Completo</label>
+                            <input type="text" id="new-domicilio" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-amber-500 outline-none">
                         </div>
                     </div>
                 </div>
@@ -380,28 +426,54 @@
                         <input type="text" id="edit-nombre" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">Email *</label>
-                        <input type="email" id="edit-email" required class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Email (No modificable) <i class="fa-solid fa-lock text-slate-400 ml-1"></i></label>
+                        <input type="email" id="edit-email" readonly class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed outline-none font-medium">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">Teléfono</label>
-                        <input type="tel" id="edit-telefono" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">Rol *</label>
-                        <select id="edit-rol" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        <label class="block text-sm font-bold text-slate-600 mb-1">Rol (No modificable) <i class="fa-solid fa-lock text-slate-400 ml-1"></i></label>
+                        <select id="edit-rol" disabled class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed outline-none font-medium appearance-none">
                             <option value="Visitante">Visitante</option>
                             <option value="Cuidador">Cuidador</option>
                             <option value="Admin">Admin</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">Género</label>
-                        <select id="edit-genero" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
-                            <option value="Masculino">Masculino</option>
-                            <option value="Femenino">Femenino</option>
-                            <option value="Otro">Otro</option>
-                        </select>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-4">
+                    <p class="text-sm font-bold text-blue-600 mb-3"><i class="fa-solid fa-circle-info"></i> Datos Base</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Teléfono</label>
+                            <input type="tel" id="edit-telefono" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Fecha Nacimiento</label>
+                            <input type="date" id="edit-fecha-nac" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Género</label>
+                            <select id="edit-genero" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none">
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="edit-cuidador-fields" class="hidden grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 mt-4 pt-4">
+                        <div class="md:col-span-2 text-xs font-bold text-amber-600 uppercase mb-1">Información Exclusiva de Cuidador</div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Nacionalidad</label>
+                            <input type="text" id="edit-nacionalidad" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-amber-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Lugar de Nacimiento</label>
+                            <input type="text" id="edit-lugar-nac" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-amber-500 outline-none">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold text-slate-600 mb-1">Domicilio Completo</label>
+                            <input type="text" id="edit-domicilio" class="w-full px-4 py-2 rounded-xl border-2 border-slate-200 focus:border-amber-500 outline-none">
+                        </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
@@ -409,6 +481,28 @@
                     <button type="submit" class="px-5 py-2 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md transition">Actualizar Datos</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="delete-confirm-modal" class="modal-overlay fixed inset-0 flex items-center justify-center z-[150] p-4">
+        <div class="modal-content glass-card bg-white w-full max-w-md rounded-3xl overflow-hidden transform transition-all text-center">
+            <div class="bg-red-50 p-8 flex flex-col items-center justify-center">
+                <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse">
+                    <i class="fa-solid fa-triangle-exclamation text-4xl text-red-500"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-800 mb-2">¿Eliminar Usuario?</h2>
+                <p class="text-slate-600 text-sm leading-relaxed mb-6">
+                    Estás a punto de eliminar definitivamente a <strong id="delete-user-name" class="text-red-600">--</strong>. Esto borrará todos sus chats y datos personales de la base de datos de Zoopedia. Esta acción no se puede deshacer.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
+                    <button onclick="closeModal('delete-confirm-modal')" class="flex-1 px-4 py-3 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all focus:outline-none">
+                        Cancelar
+                    </button>
+                    <button id="btn-confirm-delete" class="flex-1 px-4 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 focus:outline-none">
+                        Sí, eliminar
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -424,72 +518,73 @@
             </div>
         </div>
 
+    <script src="assets/config.js"></script>
+
     <script>
-    // Definimos la URL de la API localmente
-        const API_URL = "http://127.0.0.1:8000";
+            const API_URL = API_BASE_URL;
 
-        async function abrirBandejaBajas() {
-            document.getElementById('modal-bajas').classList.remove('hidden');
-            cargarSolicitudesBajas();
-        }
-
-        function cerrarBandejaBajas() {
-            document.getElementById('modal-bajas').classList.add('hidden');
-        }
-
-        async function cargarSolicitudesBajas() {
-            const contenedor = document.getElementById('lista-bajas');
-            contenedor.innerHTML = '<p class="text-slate-500 text-center py-4">Cargando solicitudes...</p>';
-
-            // Obtenemos el usuario en el momento exacto en que abre el modal (ya iniciada la sesión)
-            const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
-            if (!usuarioAdmin) return;
-
-            try {
-                const res = await fetch(`${API_URL}/admin/solicitudes_eliminacion?admin_id=${usuarioAdmin.id}`);
-                const data = await res.json();
-
-                if (data.solicitudes.length === 0) {
-                    contenedor.innerHTML = '<p class="text-slate-400 text-center py-8 font-bold"><i class="fa-solid fa-check-circle text-2xl block mb-2 text-green-400"></i>No hay peticiones de baja pendientes.</p>';
-                    return;
-                }
-
-                contenedor.innerHTML = '';
-                data.solicitudes.forEach(sol => {
-                    contenedor.innerHTML += `
-                        <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between gap-4">
-                            <div>
-                                <p class="font-bold text-slate-800">${sol.nombre} <span class="text-xs text-slate-500 font-normal">(${sol.email})</span></p>
-                                <p class="text-sm text-red-700 mt-1 bg-white p-2 rounded border border-red-100"><strong>Motivo:</strong> "${sol.motivo}"</p>
-                            </div>
-                            <div class="flex flex-row sm:flex-col gap-2 min-w-[120px]">
-                                <button onclick="aprobarBaja(${sol.id})" class="flex-1 bg-red-600 text-white font-bold py-1.5 px-3 rounded-lg hover:bg-red-700 transition-colors text-sm shadow-sm">Aprobar Baja</button>
-                                <button onclick="rechazarBaja(${sol.id})" class="flex-1 bg-white text-slate-600 border border-slate-300 font-bold py-1.5 px-3 rounded-lg hover:bg-slate-50 transition-colors text-sm">Rechazar</button>
-                            </div>
-                        </div>
-                    `;
-                });
-            } catch (e) {
-                contenedor.innerHTML = '<p class="text-red-500 text-center py-4">Error al cargar datos.</p>';
+            async function abrirBandejaBajas() {
+                document.getElementById('modal-bajas').classList.remove('hidden');
+                cargarSolicitudesBajas();
             }
-        }
 
-        async function aprobarBaja(userId) {
-            if(!confirm("¿Estás seguro de eliminar PERMANENTEMENTE esta cuenta?")) return;
-            const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
-            try {
-                await fetch(`${API_URL}/admin/usuario/${userId}?admin_id=${usuarioAdmin.id}`, { method: 'DELETE' });
-                cargarSolicitudesBajas(); // Recargar lista
-            } catch(e) { alert("Error al procesar"); }
-        }
+            function cerrarBandejaBajas() {
+                document.getElementById('modal-bajas').classList.add('hidden');
+            }
 
-        async function rechazarBaja(userId) {
-            const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
-            try {
-                await fetch(`${API_URL}/admin/rechazar_eliminacion/${userId}?admin_id=${usuarioAdmin.id}`, { method: 'POST' });
-                cargarSolicitudesBajas(); // Recargar lista
-            } catch(e) { alert("Error al procesar"); }
-        }
+            async function cargarSolicitudesBajas() {
+                const contenedor = document.getElementById('lista-bajas');
+                contenedor.innerHTML = '<p class="text-slate-500 text-center py-4">Cargando solicitudes...</p>';
+
+                // Obtenemos el usuario en el momento exacto en que abre el modal (ya iniciada la sesión)
+                const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
+                if (!usuarioAdmin) return;
+
+                try {
+                    const res = await fetch(`${API_URL}/admin/solicitudes_eliminacion?admin_id=${usuarioAdmin.id}`);
+                    const data = await res.json();
+
+                    if (data.solicitudes.length === 0) {
+                        contenedor.innerHTML = '<p class="text-slate-400 text-center py-8 font-bold"><i class="fa-solid fa-check-circle text-2xl block mb-2 text-green-400"></i>No hay peticiones de baja pendientes.</p>';
+                        return;
+                    }
+
+                    contenedor.innerHTML = '';
+                    data.solicitudes.forEach(sol => {
+                        contenedor.innerHTML += `
+                            <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between gap-4">
+                                <div>
+                                    <p class="font-bold text-slate-800">${sol.nombre} <span class="text-xs text-slate-500 font-normal">(${sol.email})</span></p>
+                                    <p class="text-sm text-red-700 mt-1 bg-white p-2 rounded border border-red-100"><strong>Motivo:</strong> "${sol.motivo}"</p>
+                                </div>
+                                <div class="flex flex-row sm:flex-col gap-2 min-w-[120px]">
+                                    <button onclick="aprobarBaja(${sol.id})" class="flex-1 bg-red-600 text-white font-bold py-1.5 px-3 rounded-lg hover:bg-red-700 transition-colors text-sm shadow-sm">Aprobar Baja</button>
+                                    <button onclick="rechazarBaja(${sol.id})" class="flex-1 bg-white text-slate-600 border border-slate-300 font-bold py-1.5 px-3 rounded-lg hover:bg-slate-50 transition-colors text-sm">Rechazar</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } catch (e) {
+                    contenedor.innerHTML = '<p class="text-red-500 text-center py-4">Error al cargar datos.</p>';
+                }
+            }
+
+            async function aprobarBaja(userId) {
+                if(!confirm("¿Estás seguro de eliminar PERMANENTEMENTE esta cuenta?")) return;
+                const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
+                try {
+                    await fetch(`${API_URL}/admin/usuario/${userId}?admin_id=${usuarioAdmin.id}`, { method: 'DELETE' });
+                    cargarSolicitudesBajas(); // Recargar lista
+                } catch(e) { alert("Error al procesar"); }
+            }
+
+            async function rechazarBaja(userId) {
+                const usuarioAdmin = JSON.parse(localStorage.getItem('usuario'));
+                try {
+                    await fetch(`${API_URL}/admin/rechazar_eliminacion/${userId}?admin_id=${usuarioAdmin.id}`, { method: 'POST' });
+                    cargarSolicitudesBajas(); // Recargar lista
+                } catch(e) { alert("Error al procesar"); }
+            }
     </script>
     
     <script>
@@ -530,7 +625,7 @@
             btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Conectando...';
 
             try {
-                const response = await fetch("http://127.0.0.1:8000/auth/login", {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: email, password: password })
@@ -593,6 +688,7 @@
             if(tabId === 'alertas') btn.classList.add('bg-red-500');
             if(tabId === 'animales') btn.classList.add('bg-emerald-600');
             if(tabId === 'logs') btn.classList.add('bg-indigo-500');
+            if(tabId === 'tickets') btn.classList.add('bg-orange-500');
         }
 
         // --- 4. RENDERIZADO DE DATOS ---
@@ -699,7 +795,7 @@
         // Nueva función para pedir los datos al servidor
         async function recargarAnimales() {
             try {
-                const res = await fetch("http://127.0.0.1:8000/admin/animales");
+                const res = await fetch(`${API_URL}/admin/animales`);
                 if (res.ok) {
                     const data = await res.json();
                     renderAnimals(data.animales);
@@ -829,10 +925,19 @@
                             <p class="text-sm"><strong class="text-slate-600">Teléfono:</strong> ${u.telefono || 'N/A'}</p>
                             <p class="text-sm"><strong class="text-slate-600">Género:</strong> ${u.genero || 'N/A'}</p>
                             <p class="text-sm"><strong class="text-slate-600">Fecha Nacimiento:</strong> ${u.fecha_nac || 'N/A'}</p>
+                            ${u.rol === 'Cuidador' ? `
+                                <div class="mt-2 pt-2 border-t border-slate-200 bg-amber-50/50 p-2 rounded-lg">
+                                    <p class="text-xs text-amber-600 font-bold uppercase mb-1">Datos de Cuidador:</p>
+                                    <p class="text-sm"><strong class="text-slate-600">Nacionalidad:</strong> ${u.nacionalidad || 'N/A'}</p>
+                                    <p class="text-sm"><strong class="text-slate-600">Lugar Nac.:</strong> ${u.lugar_nacimiento || 'N/A'}</p>
+                                    <p class="text-sm"><strong class="text-slate-600">Domicilio:</strong> ${u.domicilio || 'N/A'}</p>
+                                </div>
+                            ` : ''}
                         </div>
-                        <div class="flex gap-2 items-start">
-                            <button onclick="abrirModalEdicion(${u.id})" class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition flex items-center justify-center shadow" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="eliminarUsuario(${u.id}, '${u.nombre}')" class="w-10 h-10 rounded-xl bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition flex items-center justify-center shadow" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                        
+                        <div class="flex flex-col gap-2 min-w-[140px]">
+                            <button onclick="abrirModalEdicion(${u.id})" class="px-4 py-2 bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white rounded-lg font-bold transition text-sm flex items-center justify-center gap-2 shadow-sm"><i class="fa-solid fa-pen"></i> Editar</button>
+                            <button onclick="eliminarUsuario(${u.id}, '${u.nombre}')" class="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-600 hover:text-white rounded-lg font-bold transition text-sm flex items-center justify-center gap-2 shadow-sm"><i class="fa-solid fa-trash"></i> Eliminar</button>
                         </div>
                     </div>
                 </details>
@@ -844,161 +949,166 @@
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-        function toggleRoleFields(role) {
-            const extraFields = document.getElementById('cuidador-fields');
+        function toggleRoleFields(role, prefix) {
+            const extraFields = document.getElementById(`${prefix}-cuidador-fields`);
+            if (!extraFields) return;
+            
             if(role === 'Cuidador') {
                 extraFields.classList.remove('hidden');
                 extraFields.classList.add('grid');
             } else {
                 extraFields.classList.add('hidden');
                 extraFields.classList.remove('grid');
+                // Limpiar campos si regresó a Visitante
+                document.getElementById(`${prefix}-nacionalidad`).value = '';
+                document.getElementById(`${prefix}-lugar-nac`).value = '';
+                document.getElementById(`${prefix}-domicilio`).value = '';
+            }
+        }
+
+        async function handleFormSubmit(e, modalId, successMessage) {
+            e.preventDefault();
+            
+            const rolSeleccionado = document.getElementById('new-rol').value;
+            
+            // Recolectar datos base
+            const payload = {
+                nombre: document.getElementById('new-nombre').value,
+                email: document.getElementById('new-email').value,
+                password: document.getElementById('new-password').value,
+                rol: rolSeleccionado,
+                telefono: document.getElementById('new-telefono').value,
+                fecha_nac: document.getElementById('new-fecha-nac').value,
+                genero: document.getElementById('new-genero').value,
+                // Datos exclusivos (se envían en null si es visitante)
+                nacionalidad: rolSeleccionado === 'Cuidador' ? document.getElementById('new-nacionalidad').value : null,
+                lugar_nacimiento: rolSeleccionado === 'Cuidador' ? document.getElementById('new-lugar-nac').value : null,
+                domicilio: rolSeleccionado === 'Cuidador' ? document.getElementById('new-domicilio').value : null
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/registrar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if(response.ok) {
+                    showToast(successMessage, "success");
+                    closeModal(modalId);
+                    e.target.reset();
+                    toggleRoleFields('Visitante', 'new'); // Reset visual
+                    recargarTablaUsuarios();
+                } else {
+                    const data = await response.json();
+                    showToast(data.detail, "error");
+                }
+            } catch(error) { 
+                showToast("Error de conexión", "error"); 
             }
         }
 
         // Cargar los datos del usuario en el modal
 // Cargar los datos del usuario en el modal
 function abrirModalEdicion(idUsuario) {
-    // 1. Buscamos el perfil completo del usuario usando el ID
-    const user = window.usuariosCargados.find(u => u.id === idUsuario);
-    
-    // Si por alguna razón no lo encuentra, mostramos error
-    if (!user) {
-        showToast("Error: No se pudo cargar la información del usuario", "error");
-        return;
-    }
+            const user = window.usuariosCargados.find(u => u.id === idUsuario);
+            if (!user) return;
 
-    // 2. Llenamos los campos del formulario con los datos encontrados
-    document.getElementById('edit-id').value = user.id;
-    document.getElementById('edit-nombre').value = user.nombre;
-    document.getElementById('edit-email').value = user.email;
-    
-    // Seleccionamos el rol correcto (ignorando mayúsculas/minúsculas por si acaso)
-    const selectRol = document.getElementById('edit-rol');
-    for (let i = 0; i < selectRol.options.length; i++) {
-        if (selectRol.options[i].value.toLowerCase() === user.rol.toLowerCase()) {
-            selectRol.selectedIndex = i;
-            break;
-        }
-    }
+            document.getElementById('edit-id').value = user.id;
+            document.getElementById('edit-nombre').value = user.nombre;
+            document.getElementById('edit-email').value = user.email;
+            
+            document.getElementById('edit-rol').value = user.rol; 
+            toggleRoleFields(user.rol, 'edit'); // Expande si es cuidador
 
-    document.getElementById('edit-telefono').value = user.telefono || '';
-    
-    // Seleccionamos el género correcto
-    const selectGenero = document.getElementById('edit-genero');
-    if (user.genero) {
-        for (let i = 0; i < selectGenero.options.length; i++) {
-            if (selectGenero.options[i].value === user.genero) {
-                selectGenero.selectedIndex = i;
-                break;
-            }
+            document.getElementById('edit-telefono').value = user.telefono || '';
+            document.getElementById('edit-fecha-nac').value = user.fecha_nac || '';
+            document.getElementById('edit-genero').value = user.genero || 'Masculino';
+            
+            // Llenar datos de cuidador
+            document.getElementById('edit-nacionalidad').value = user.nacionalidad || '';
+            document.getElementById('edit-lugar-nac').value = user.lugar_nacimiento || '';
+            document.getElementById('edit-domicilio').value = user.domicilio || '';
+            
+            openModal('edit-user-modal');
         }
-    } else {
-        selectGenero.selectedIndex = 0; // Por defecto "Masculino" si no tiene
-    }
-    
-    // 3. Finalmente abrimos el modal
-    openModal('edit-user-modal');
-}
 
 // Enviar los datos actualizados al backend
     async function guardarEdicionUsuario(e) {
-        e.preventDefault();
-        
-        const idUsuario = document.getElementById('edit-id').value;
-        const adminActual = JSON.parse(localStorage.getItem('usuario'));
-        const btnSubmit = e.target.querySelector('button[type="submit"]');
-        
-        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
-
-        const payload = {
-            nombre: document.getElementById('edit-nombre').value,
-            email: document.getElementById('edit-email').value,
-            rol: document.getElementById('edit-rol').value,
-            telefono: document.getElementById('edit-telefono').value,
-            genero: document.getElementById('edit-genero').value
-        };
-
-        try {
-            const response = await fetch(`http://127.0.0.1:8000/admin/usuario/${idUsuario}?admin_id=${adminActual.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                showToast("Usuario actualizado correctamente", "success");
-                closeModal('edit-user-modal');
-                recargarTablaUsuarios(); // Refresca los datos en vivo
-            } else {
-                const data = await response.json();
-                showToast(data.detail || "Error al actualizar", "error");
-            }
-        } catch (error) {
-            showToast("Error de conexión con el servidor", "error");
-        } finally {
-            btnSubmit.innerHTML = 'Actualizar Datos';
-        }
-    }
-
-        async function handleFormSubmit(e, modalId, successMessage) {
             e.preventDefault();
-            
-            if (modalId === 'user-modal') {
-                const inputs = e.target.querySelectorAll('input, select');
-                const nuevoUser = {
-                    nombre: inputs[0].value,
-                    email: inputs[1].value,
-                    password: inputs[2].value,
-                    rol: inputs[3].value,
-                    telefono: inputs[4].value,
-                    genero: inputs[5].value
-                };
-                
-                try {
-                    const response = await fetch("http://127.0.0.1:8000/auth/registrar", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(nuevoUser)
-                    });
-                    
-                    if(response.ok) {
-                        showToast(successMessage, "success");
-                        closeModal(modalId);
-                        e.target.reset();
-                        recargarTablaUsuarios();
-                    } else {
-                        const data = await response.json();
-                        showToast(data.detail, "error");
-                    }
-                } catch(error) { 
-                    showToast("Error de conexión (Simulación local)", "warning"); 
-                    closeModal(modalId);
-                    e.target.reset();
-                }
-            } else {
-                closeModal(modalId);
-                showToast(successMessage, "success");
-                e.target.reset();
-            }
-        }
+            const idUsuario = document.getElementById('edit-id').value;
+            const adminActual = JSON.parse(localStorage.getItem('usuario'));
+            const btnSubmit = e.target.querySelector('button[type="submit"]');
+            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
-        async function eliminarUsuario(idTarget, nombre) {
-            if(!confirm(`¿Eliminar definitivamente a ${nombre}? Esto borrará sus chats.`)) return;
-            
-            const usuarioStr = localStorage.getItem('usuario');
-            if(!usuarioStr) return;
-            const usuarioActual = JSON.parse(usuarioStr);
+            const rolSeleccionado = document.getElementById('edit-rol').value;
+            const payload = {
+                nombre: document.getElementById('edit-nombre').value,
+                email: document.getElementById('edit-email').value,
+                rol: rolSeleccionado,
+                telefono: document.getElementById('edit-telefono').value,
+                fecha_nac: document.getElementById('edit-fecha-nac').value,
+                genero: document.getElementById('edit-genero').value,
+                nacionalidad: rolSeleccionado === 'Cuidador' ? document.getElementById('edit-nacionalidad').value : null,
+                lugar_nacimiento: rolSeleccionado === 'Cuidador' ? document.getElementById('edit-lugar-nac').value : null,
+                domicilio: rolSeleccionado === 'Cuidador' ? document.getElementById('edit-domicilio').value : null
+            };
 
             try {
-                const response = await fetch(`http://127.0.0.1:8000/admin/usuario/${idTarget}?admin_id=${usuarioActual.id}`, { method: 'DELETE' });
+                const response = await fetch(`${API_URL}/admin/usuario/${idUsuario}?admin_id=${adminActual.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    showToast("Usuario actualizado correctamente", "success");
+                    closeModal('edit-user-modal');
+                    recargarTablaUsuarios();
+                } else {
+                    const data = await response.json();
+                    showToast(data.detail || "Error al actualizar", "error");
+                }
+            } catch (error) {
+                showToast("Error de conexión", "error");
+            } finally {
+                btnSubmit.innerHTML = 'Actualizar Datos';
+            }
+        }
+
+        let usuarioAEliminar = null; // Guardará el ID temporalmente
+
+        function eliminarUsuario(idTarget, nombre) {
+            usuarioAEliminar = idTarget;
+            document.getElementById('delete-user-name').innerText = nombre;
+            openModal('delete-confirm-modal');
+            
+            // Asignar el clic al botón de confirmar
+            document.getElementById('btn-confirm-delete').onclick = ejecutarEliminacion;
+        }
+
+        async function ejecutarEliminacion() {
+            if(!usuarioAEliminar) return;
+            
+            const btnConfirm = document.getElementById('btn-confirm-delete');
+            btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Borrando...';
+            
+            const usuarioActual = JSON.parse(localStorage.getItem('usuario'));
+
+            try {
+                const response = await fetch(`${API_URL}/admin/usuario/${usuarioAEliminar}?admin_id=${usuarioActual.id}`, { method: 'DELETE' });
                 if(response.ok) {
                     showToast("Usuario eliminado correctamente", "success");
                     recargarTablaUsuarios();
                 } else {
-                    showToast("Usuario eliminado localmente (Simulación)", "success");
+                    showToast("Error al intentar eliminar", "error");
                 }
             } catch(e) { 
-                showToast("Simulando eliminación sin backend", "success"); 
+                showToast("Fallo de conexión", "error"); 
+            } finally {
+                closeModal('delete-confirm-modal');
+                btnConfirm.innerHTML = 'Sí, eliminar';
+                usuarioAEliminar = null;
             }
         }
 
@@ -1008,7 +1118,7 @@ function abrirModalEdicion(idUsuario) {
             const usuarioActual = JSON.parse(usuarioStr);
             
             try {
-                const res = await fetch(`http://127.0.0.1:8000/admin/usuarios?user_id=${usuarioActual.id}`);
+                const res = await fetch(`${API_URL}/admin/usuarios?user_id=${usuarioActual.id}`);
                 if(res.ok) {
                     const data = await res.json();
                     renderUsers(data.usuarios);
@@ -1050,7 +1160,7 @@ function abrirModalEdicion(idUsuario) {
             document.getElementById('user-display-name').innerText = usuarioActual.nombre;
 
             try {
-                const response = await fetch(`http://127.0.0.1:8000/admin/usuarios?user_id=${usuarioActual.id}`, {
+                const response = await fetch(`${API_URL}/admin/usuarios?user_id=${usuarioActual.id}`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -1070,6 +1180,7 @@ function abrirModalEdicion(idUsuario) {
             recargarAlertas();
             recargarAnimales();
             recargarLogs();
+            cargarTickets();
         };
         function filtrarUsuarios() {
             // 1. Obtenemos lo que escribiste y lo pasamos a minúsculas
@@ -1167,7 +1278,7 @@ function abrirModalEdicion(idUsuario) {
         }
         async function recargarLogs() {
             try {
-                const res = await fetch("http://127.0.0.1:8000/admin/logs/cuidadores");
+                const res = await fetch(`${API_URL}/admin/logs/cuidadores`);
                 if (res.ok) {
                     const data = await res.json();
                     renderLogs(data.logs);
@@ -1186,7 +1297,7 @@ function abrirModalEdicion(idUsuario) {
             
             try {
                 // Usamos el endpoint de cuidador que trae todas las conversaciones
-                const res = await fetch(`http://127.0.0.1:8000/cuidador/alertas?user_id=${usuarioActual.id}`);
+                const res = await fetch(`${API_URL}/cuidador/alertas?user_id=${usuarioActual.id}`);
                 if(res.ok) {
                     const data = await res.json();
                     renderAlerts(data.alertas);
@@ -1201,7 +1312,7 @@ function abrirModalEdicion(idUsuario) {
 
         async function resolverAlerta(conversacionId) {
             try {
-                const response = await fetch(`http://127.0.0.1:8000/chat/resolver/${conversacionId}`, {
+                const response = await fetch(`${API_URL}/chat/resolver/${conversacionId}`, {
                     method: 'POST'
                 });
                 if (response.ok) {
@@ -1280,7 +1391,7 @@ function abrirModalEdicion(idUsuario) {
             formData.append("nombre", nombreArchivo);
 
             try {
-                const response = await fetch("http://127.0.0.1:8000/admin/animales/upload", {
+                const response = await fetch(`${API_URL}/admin/animales/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1300,6 +1411,79 @@ function abrirModalEdicion(idUsuario) {
                 toggleUploadButton(); // Reactivar si el checkbox sigue marcado
             }
         }
+        
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        async function verificarCorreoNuevo(email) {
+            if(!email) return;
+            const btnGuardar = document.querySelector('#new-user-form button[type="submit"]');
+            const errorText = document.getElementById('error-email-new');
+            const inputEmail = document.getElementById('new-email');
+
+            try {
+                const res = await fetch(`${API_URL}/usuario/verificar_email/${email}`);
+                const data = await res.json();
+                
+                if(data.existe) {
+                    errorText.classList.remove('hidden');
+                    inputEmail.classList.add('border-red-500', 'bg-red-50');
+                    btnGuardar.disabled = true;
+                    btnGuardar.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    errorText.classList.add('hidden');
+                    inputEmail.classList.remove('border-red-500', 'bg-red-50');
+                    btnGuardar.disabled = false;
+                    btnGuardar.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            } catch(e) { console.error("Error validando correo"); }
+        }
+        async function cargarTickets() {
+            const tbody = document.getElementById('tabla-tickets');
+            try {
+                // Aquí llamaremos al endpoint de tu backend en Python
+                const response = await fetch(`${API_BASE_URL}/tickets`);
+                
+                if(response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.tickets && data.tickets.length > 0) {
+                        tbody.innerHTML = data.tickets.map(t => `
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="p-4 font-mono font-bold text-orange-600">${t.ticket_id}</td>
+                                <td class="p-4">
+                                    <span class="block font-bold text-slate-800">${t.user_name}</span>
+                                    <a href="mailto:${t.contact_email}" class="text-xs text-blue-500 hover:underline"><i class="fa-regular fa-envelope"></i> ${t.contact_email}</a>
+                                </td>
+                                <td class="p-4 max-w-md">
+                                    <span class="block font-bold text-slate-700">${t.bug_title}</span>
+                                    <span class="block text-xs text-slate-500 truncate" title="${t.bug_description}">${t.bug_description}</span>
+                                </td>
+                                <td class="p-4 text-right">
+                                    <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-bold border border-orange-200"><i class="fa-regular fa-clock"></i> Pendiente</span>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-slate-400 font-semibold"><i class="fa-solid fa-check-circle text-2xl block mb-2 text-green-400"></i>No hay tickets reportados.</td></tr>';
+                    }
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-slate-400 font-semibold">No se encontraron tickets (Esperando endpoint del backend).</td></tr>';
+                }
+            } catch (error) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-red-500"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Error al conectar con la base de datos.</td></tr>';
+            }
+        }
+
 
     </script>
 </body>

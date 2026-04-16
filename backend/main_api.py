@@ -3,7 +3,7 @@ import os
 import shutil
 from pydantic import BaseModel
 from utils.db_manager import get_all_posts, create_post, create_reply, delete_post, update_post
-from fastapi import FastAPI, HTTPException, File, UploadFile, Form
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException
@@ -25,6 +25,16 @@ import psycopg2.extras
 
 # 1. Inicializar la app FastAPI
 app = FastAPI(title="Zoopedia API")
+
+# --- CONFIGURACIÓN DE CARPETA DE FONDOS ---
+RUTA_FONDOS = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "assets", "fondos") 
+os.makedirs(RUTA_FONDOS, exist_ok=True) 
+
+# AGREGAR ESTA LÍNEA AQUÍ: Ruta a toda la carpeta frontend
+RUTA_FRONTEND = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+
+# Montamos la carpeta para que el frontend pueda ver los fondos
+app.mount("/fondos", StaticFiles(directory=RUTA_FONDOS), name="fondos")
 
 # --- CONFIGURACIÓN DE CARPETA DE ANIMALES (PDFs) ---
 # Detectamos automáticamente la ruta de la carpeta data/docs_animales
@@ -93,8 +103,12 @@ class RegistroRequest(BaseModel):
     telefono: str = None
     fecha_nac: str = None
     genero: str = None
-    rol: str = "Visitante"  # <- Nuevo campo
-    pin: str = None # <- Nuevo campo agregado
+    rol: str = "Visitante"
+    pin: str = None
+    # NUEVOS CAMPOS EXCLUSIVOS DE CUIDADOR
+    nacionalidad: str = None
+    lugar_nacimiento: str = None
+    domicilio: str = None
 
 class LoginPinRequest(BaseModel):
     email: str
@@ -206,7 +220,8 @@ def login_endpoint(req: LoginRequest):
 def registrar_endpoint(req: RegistroRequest):
     exito = db_manager.registrar_usuario(
         req.nombre, req.email, req.password, 
-        req.telefono, req.fecha_nac, req.genero, req.rol, req.pin # <- Pasamos el PIN aquí
+        req.telefono, req.fecha_nac, req.genero, req.rol, req.pin,
+        req.nacionalidad, req.lugar_nacimiento, req.domicilio # <-- ¡Faltaba pasar estos 3 datos!
     )
     if not exito:
         raise HTTPException(status_code=400, detail="El correo ya está registrado o es inválido.")
@@ -337,6 +352,13 @@ def obtener_perfil_endpoint(user_id: int):
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return {"success": True, "perfil": usuario}
 
+@app.get("/cuidador/perfil/{user_id}")
+def obtener_perfil_completo_cuidador(user_id: int):
+    perfil = db_manager.obtener_perfil_cuidador(user_id)
+    if not perfil:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+    return {"success": True, "perfil": perfil}
+
 class CambiarPasswordRequest(BaseModel):
     user_id: int
     password_antigua: str
@@ -392,6 +414,11 @@ def cambiar_pin_endpoint(req: CambiarPinRequest):
     except AttributeError:
         raise HTTPException(status_code=501, detail="La función cambiar_pin no está lista.")
 
+@app.get("/usuario/verificar_email/{email}")
+def verificar_email_endpoint(email: str):
+    existe = db_manager.verificar_email_existente(email)
+    return {"existe": existe}
+
 class ActualizarUsuarioRequest(BaseModel):
     nombre: str
     email: str
@@ -399,6 +426,10 @@ class ActualizarUsuarioRequest(BaseModel):
     fecha_nac: str = None
     genero: str = None
     rol: str
+    # Agregamos los campos de cuidador
+    nacionalidad: str = None
+    lugar_nacimiento: str = None
+    domicilio: str = None
 
 class UsuarioActualizarPropioRequest(BaseModel):
     user_id: int
@@ -450,13 +481,13 @@ def obtener_usuarios_endpoint(user_id: int):
 
 @app.put("/admin/usuario/{user_id_actualizar}")
 def actualizar_usuario_endpoint(user_id_actualizar: int, admin_id: int, req: ActualizarUsuarioRequest):
-    # Validar que quien intenta editar sea admin
     usuario_admin = db_manager.obtener_info_usuario(admin_id)
     if not usuario_admin or usuario_admin["rol"] != "Admin":
         raise HTTPException(status_code=403, detail="Permiso denegado")
         
     exito = db_manager.actualizar_usuario(
-        user_id_actualizar, req.nombre, req.email, req.telefono, req.fecha_nac, req.genero, req.rol
+        user_id_actualizar, req.nombre, req.email, req.telefono, req.fecha_nac, req.genero, req.rol,
+        req.nacionalidad, req.lugar_nacimiento, req.domicilio # <-- Añadidos aquí
     )
     
     if not exito:
@@ -464,7 +495,7 @@ def actualizar_usuario_endpoint(user_id_actualizar: int, admin_id: int, req: Act
     return {"success": True, "mensaje": "Usuario actualizado correctamente"}
 
 @app.get("/admin/animales")
-def obtener_catalogo_animales():
+def obtener_catalogo_animales(request: Request): # <-- 1. Añadimos request: Request
     animales = []
     if os.path.exists(RUTA_PDFS):
         archivos = os.listdir(RUTA_PDFS)
@@ -481,7 +512,8 @@ def obtener_catalogo_animales():
                 animales.append({
                     "nombre": nombre_limpio,
                     "archivo": archivo,
-                    "url": f"http://127.0.0.1:8000/animales_pdfs/{archivo}"
+                    # 2. Construimos la URL dinámicamente según la IP que hizo la petición
+                    "url": f"{request.base_url}animales_pdfs/{archivo}"
                 })
     return {"success": True, "animales": animales}
 
@@ -740,3 +772,5 @@ def api_update_post(post_id: int, post: PostUpdate):
     update_post(conn, post_id, post.content)
     conn.close()
     return {"message": "Post actualizado"}
+
+app.mount("/", StaticFiles(directory=RUTA_FRONTEND, html=True), name="frontend")

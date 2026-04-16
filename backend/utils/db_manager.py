@@ -17,7 +17,7 @@ def _hash_password(password):
     return hashlib.sha256(str(password).encode('utf-8')).hexdigest()
 
 # 1. Actualiza la función registrar_usuario para aceptar el PIN
-def registrar_usuario(nombre, email, password, telefono, fecha_nac, genero, rol='Visitante', pin=None):
+def registrar_usuario(nombre, email, password, telefono, fecha_nac, genero, rol='Visitante', pin=None, nacionalidad=None, lugar_nacimiento=None, domicilio=None):
     email_clean = email.strip().lower()
     if email_clean == 'admin':
         return False 
@@ -25,16 +25,25 @@ def registrar_usuario(nombre, email, password, telefono, fecha_nac, genero, rol=
     conn = get_connection()
     c = conn.cursor()
     password_cifrada = _hash_password(password)
-    
-    # Encriptamos el PIN si el usuario lo proporcionó
     pin_cifrado = _hash_password(pin) if pin else None
 
     try:
-        # Añadimos la columna pin a la consulta SQL
+        # 1. Insertamos en la tabla principal y pedimos que nos devuelva su ID (RETURNING id)
         c.execute('''
             INSERT INTO usuarios (nombre, email, password, telefono, fecha_nac, genero, rol, pin)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
         ''', (nombre, email, password_cifrada, telefono, str(fecha_nac), genero, rol, pin_cifrado))
+        
+        nuevo_usuario_id = c.fetchone()[0]
+
+        # 2. Si el rol es Cuidador, guardamos sus datos exclusivos en la tabla anexa
+        if rol == 'Cuidador':
+            c.execute('''
+                INSERT INTO datos_cuidador (usuario_id, nacionalidad, lugar_nacimiento, domicilio)
+                VALUES (%s, %s, %s, %s)
+            ''', (nuevo_usuario_id, nacionalidad, lugar_nacimiento, domicilio))
+
         conn.commit()
         return True
     except psycopg2.IntegrityError:
@@ -110,34 +119,56 @@ def verificar_metodos_login(email):
     return None
 
 def obtener_todos_los_usuarios():
-    """Obtiene la lista de todos los usuarios registrados para el panel de admin"""
+    """Obtiene la lista de usuarios combinando la tabla base y los datos de cuidador"""
     conn = get_connection()
     c = conn.cursor()
-    # Seleccionamos todo excepto la contraseña por seguridad
-    c.execute("SELECT id, nombre, email, telefono, fecha_nac, genero, rol FROM usuarios ORDER BY id DESC")
+    c.execute("""
+        SELECT u.id, u.nombre, u.email, u.telefono, u.fecha_nac, u.genero, u.rol,
+               d.nacionalidad, d.lugar_nacimiento, d.domicilio
+        FROM usuarios u
+        LEFT JOIN datos_cuidador d ON u.id = d.usuario_id
+        ORDER BY u.id DESC
+    """)
     usuarios = c.fetchall()
     c.close()
     conn.close()
     
-    # Formateamos los datos en una lista de diccionarios
     lista_usuarios = []
     for u in usuarios:
         lista_usuarios.append({
             "id": u[0], "nombre": u[1], "email": u[2], 
-            "telefono": u[3], "fecha_nac": u[4], "genero": u[5], "rol": u[6]
+            "telefono": u[3], "fecha_nac": str(u[4]) if u[4] else None, 
+            "genero": u[5], "rol": u[6],
+            "nacionalidad": u[7], "lugar_nacimiento": u[8], "domicilio": u[9]
         })
     return lista_usuarios
 
-def actualizar_usuario(user_id, nombre, email, telefono, fecha_nac, genero, rol):
-    """Actualiza los datos de un usuario existente en Supabase"""
+def actualizar_usuario(user_id, nombre, email, telefono, fecha_nac, genero, rol, nacionalidad=None, lugar_nacimiento=None, domicilio=None):
+    """Actualiza datos base y datos exclusivos de cuidador simultáneamente"""
     conn = get_connection()
     c = conn.cursor()
     try:
+        # 1. Actualizar tabla base
         c.execute('''
             UPDATE usuarios 
             SET nombre = %s, email = %s, telefono = %s, fecha_nac = %s, genero = %s, rol = %s
             WHERE id = %s
         ''', (nombre, email, telefono, str(fecha_nac) if fecha_nac else None, genero, rol, user_id))
+        
+        # 2. Actualizar o insertar tabla cuidador
+        if rol == 'Cuidador':
+            c.execute('''
+                INSERT INTO datos_cuidador (usuario_id, nacionalidad, lugar_nacimiento, domicilio)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (usuario_id) 
+                DO UPDATE SET nacionalidad = EXCLUDED.nacionalidad, 
+                              lugar_nacimiento = EXCLUDED.lugar_nacimiento, 
+                              domicilio = EXCLUDED.domicilio
+            ''', (user_id, nacionalidad, lugar_nacimiento, domicilio))
+        else:
+            # Si le cambian el rol a visitante, limpiamos sus datos exclusivos por seguridad
+            c.execute('DELETE FROM datos_cuidador WHERE usuario_id = %s', (user_id,))
+            
         conn.commit()
         return True
     except Exception as e:
@@ -285,6 +316,16 @@ def rechazar_solicitud_eliminacion(user_id):
     conn.commit()
     c.close()
     conn.close()
+
+def verificar_email_existente(email):
+    """Comprueba rápidamente si un correo ya está en la base de datos"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id FROM usuarios WHERE LOWER(email) = LOWER(%s)", (email.strip(),))
+    existe = c.fetchone() is not None
+    c.close()
+    conn.close()
+    return existe
 
 # --- FUNCIONES PARA EL CHAT ACTUALIZADAS ---
 def crear_nueva_conversacion(user_id, titulo="Nueva conversación", tipo="ia"):
@@ -597,3 +638,32 @@ def eliminar_avatar_personalizado(avatar_id, user_id):
     finally:
         c.close()
         conn.close()
+
+def obtener_perfil_cuidador(user_id):
+    """Obtiene los datos base del usuario + los datos exclusivos de cuidador"""
+    conn = get_connection()
+    c = conn.cursor()
+    query = """
+        SELECT u.nombre, u.email, u.telefono, u.fecha_nac,
+               d.lugar_nacimiento, d.nacionalidad, d.domicilio, d.foto_perfil
+        FROM usuarios u
+        LEFT JOIN datos_cuidador d ON u.id = d.usuario_id
+        WHERE u.id = %s
+    """
+    c.execute(query, (user_id,))
+    row = c.fetchone()
+    c.close()
+    conn.close()
+    
+    if row:
+        return {
+            "nombre": row[0],
+            "email": row[1],
+            "telefono": row[2],
+            "fecha_nac": row[3],
+            "lugar_nacimiento": row[4],
+            "nacionalidad": row[5],
+            "domicilio": row[6],
+            "foto_perfil": row[7]
+        }
+    return None

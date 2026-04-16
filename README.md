@@ -73,7 +73,7 @@ DATABASE_URL=tu_link_de_tu_base_de_datos_de_Supabase_aqui
 Levanta el servidor FastAPI para habilitar los endpoints. Desde la raíz del proyecto, ejecuta:
 
 cd backend
-uvicorn main_api:app --reload
+uvicorn main_api:app --host 0.0.0.0 --port 8000 --reload"
 
 La API estará disponible por defecto en `http://127.0.0.1:8000`.
 
